@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Cardápio de drinks autorais e clássicos. Escolha o seu, veja a receita e faça o pedido.">
+  <meta name="theme-color" content="#fdf8f1">
+  <title>Bar do Tibs · Cardápio de Drinks</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar navbar-expand-lg bar-nav sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="#" data-view-link="cardapio">
+      <span class="brand-mark">&#127864;</span>
+      <span class="brand-text">Bar do Tibs</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+            aria-controls="mainNav" aria-expanded="false" aria-label="Abrir menu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="mainNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item">
+          <a class="nav-link active" href="#" data-view-link="cardapio">Cardápio</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-view-link="ranking">
+            Mais pedidos
+            <span class="badge-count" id="navTotalBadge" hidden>0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-view-link="copos">Meus copos</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ VIEW: CARDÁPIO ============ -->
+<main id="view-cardapio" class="view">
+
+  <header class="hero">
+    <div class="container">
+      <p class="hero-kicker">Coquetelaria caseira</p>
+      <h1 class="hero-title">Escolha o seu drink</h1>
+      <p class="hero-sub">
+        Toque em qualquer card para virar e ver a receita completa.
+        Gostou? Clique em <strong>Quero esse</strong> que o bartender já anota.
+      </p>
+    </div>
+  </header>
+
+  <section class="container pb-5">
+
+    <!-- Filtros -->
+    <div class="filter-bar">
+      <div class="filter-search">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="searchInput" class="form-control" placeholder="Buscar por nome ou ingrediente..."
+               autocomplete="off" aria-label="Buscar drink">
+      </div>
+      <div class="filter-chips" id="glassFilters" role="group" aria-label="Filtrar por copo"></div>
+    </div>
+
+    <p class="results-info" id="resultsInfo"></p>
+
+    <!-- Grid de cards -->
+    <div class="row g-4" id="drinkGrid"></div>
+
+    <div class="empty-state" id="emptyState" hidden>
+      <span class="empty-emoji">&#127865;</span>
+      <h3>Nenhum drink encontrado</h3>
+      <p>Tente outro termo ou limpe os filtros.</p>
+      <button class="btn btn-outline-gold btn-sm" id="clearFilters">Limpar filtros</button>
+    </div>
+  </section>
+</main>
+
+<!-- ============ VIEW: RANKING ============ -->
+<main id="view-ranking" class="view" hidden>
+  <header class="hero hero-compact">
+    <div class="container">
+      <p class="hero-kicker">Placar da noite</p>
+      <h1 class="hero-title">Drinks mais pedidos</h1>
+      <p class="hero-sub">O que a galera está bebendo, em tempo real.</p>
+    </div>
+  </header>
+
+  <section class="container pb-5">
+
+    <!-- Resumo -->
+    <div class="row g-3 mb-4" id="statsRow">
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <span class="stat-value" id="statTotal">0</span>
+          <span class="stat-label">Pedidos no total</span>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <span class="stat-value" id="statVariedade">0</span>
+          <span class="stat-label">Drinks diferentes</span>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <span class="stat-value stat-value-sm" id="statCampeao">—</span>
+          <span class="stat-label">Campeão da noite</span>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card">
+          <span class="stat-value stat-value-sm" id="statCopo">—</span>
+          <span class="stat-label">Copo mais usado</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="ranking-empty" id="rankingEmpty">
+      <span class="empty-emoji">&#128202;</span>
+      <h3>Nenhum pedido ainda</h3>
+      <p>Assim que o primeiro drink for pedido, o ranking aparece aqui.</p>
+      <button class="btn btn-gold" data-view-link="cardapio">Ver o cardápio</button>
+    </div>
+
+    <div id="rankingContent" hidden>
+      <div class="row g-4">
+        <!-- Gráfico -->
+        <div class="col-lg-7">
+          <div class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Ranking geral</h2>
+              <span class="panel-hint">por número de pedidos</span>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="rankingChart" aria-label="Gráfico de drinks mais pedidos" role="img"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pódio + lista -->
+        <div class="col-lg-5">
+          <div class="panel h-100">
+            <div class="panel-head">
+              <h2 class="panel-title">Detalhado</h2>
+              <span class="panel-hint">quantidade por drink</span>
+            </div>
+            <ol class="rank-list" id="rankList"></ol>
+          </div>
+        </div>
+
+        <!-- Distribuição por copo -->
+        <div class="col-12">
+          <div class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Distribuição por copo</h2>
+              <span class="panel-hint">quantos drinks saem em cada taça</span>
+            </div>
+            <div class="chart-wrap chart-wrap-sm">
+              <canvas id="glassChart" aria-label="Gráfico de pedidos por tipo de copo" role="img"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ferramentas -->
+    <div class="tools-bar">
+      <button class="btn btn-outline-soft btn-sm" id="exportBtn">Exportar dados</button>
+      <button class="btn btn-outline-soft btn-sm" id="importBtn">Importar dados</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="btn btn-outline-danger btn-sm" id="resetBtn">Zerar contagem</button>
+    </div>
+    <p class="tools-note">
+      Os pedidos ficam salvos no navegador de cada convidado. Para consolidar o placar da festa,
+      peça que exportem o arquivo ou deixe um único celular/tablet como “totem de pedidos”.
+    </p>
+  </section>
+</main>
+
+<!-- ============ VIEW: COPOS ============ -->
+<main id="view-copos" class="view" hidden>
+  <header class="hero hero-compact">
+    <div class="container">
+      <p class="hero-kicker">Cristaleira</p>
+      <h1 class="hero-title">Meus copos</h1>
+      <p class="hero-sub">Cada drink do cardápio foi pensado para uma dessas peças.</p>
+    </div>
+  </header>
+  <section class="container pb-5">
+    <div class="row g-4" id="glassGrid"></div>
+  </section>
+</main>
+
+<!-- ============ MODAL DE CONFIRMAÇÃO ============ -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center">
+        <div class="modal-hero" id="modalGlassIcon"></div>
+        <p class="modal-kicker">Confirmar pedido</p>
+        <h2 class="modal-title" id="confirmModalLabel">—</h2>
+        <p class="modal-desc" id="modalDesc">—</p>
+        <div class="modal-meta" id="modalMeta"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Voltar ao cardápio</button>
+        <button type="button" class="btn btn-gold" id="confirmOrderBtn">Confirmar pedido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="orderToast" class="toast align-items-center border-0" role="status" aria-live="polite" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="toastBody">Pedido anotado!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>Bar do Tibs &#127864; Beba com responsabilidade — e nunca dirija depois de beber.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
+        integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
+<script src="assets/js/drinks.js"></script>
+<script src="assets/js/art.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
