@@ -248,7 +248,7 @@ h1, h2, h3 {
   inset: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-2);
   border-radius: 22px;
   overflow: hidden;
   background: var(--surface);
@@ -315,6 +315,17 @@ h1, h2, h3 {
   z-index: 2;
 }
 .glass-chip svg { width: 16px; height: 16px; color: var(--card-accent, var(--brand)); }
+
+/* Os selos da frente somem quando o card vira: além de poluírem a leitura
+   da receita, elementos posicionados com z-index vazam através da face
+   traseira em vários navegadores móveis. */
+.glass-chip,
+.order-count-badge { transition: opacity .2s ease; }
+.flip-card.is-flipped .glass-chip,
+.flip-card.is-flipped .order-count-badge {
+  opacity: 0;
+  pointer-events: none;
+}
 
 .order-count-badge {
   position: absolute;
@@ -756,6 +767,8 @@ ol.recipe-list li::before {
 @media (max-width: 575.98px) {
   .flip-card { height: 462px; }
   .card-media { height: 186px; }
+  /* no celular o card ocupa a largura toda e se perde no fundo claro */
+  .flip-face { border-color: rgba(43, 36, 32, .26); }
   .card-name { font-size: 1.55rem; }
   /* em coluna, o flex-basis vira altura: zerar para o campo não esticar */
   .filter-bar { flex-direction: column; align-items: stretch; min-width: 0; }
