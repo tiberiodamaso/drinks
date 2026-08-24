@@ -1,6 +1,16 @@
 /* =========================================================
    Base de dados dos drinks
    Cada drink referencia um dos copos disponíveis em casa.
+
+   FOTOS
+   Por padrão o card mostra a ilustração SVG do copo do drink,
+   gerada em art.js. Para usar uma foto real, coloque o arquivo
+   em assets/img/ e adicione o campo `imagem` ao drink:
+
+       imagem: 'assets/img/mojito.webp',
+
+   A foto substitui a ilustração só naquele card. Se o arquivo
+   não carregar, o card volta sozinho para a ilustração.
    ========================================================= */
 
 const GLASSES = {
@@ -42,7 +52,7 @@ const GLASSES = {
     curto: 'Coquetel',
     nome: 'Taça Coquetel Tropical',
     volume: '355 ml',
-    descricao: 'Taça larga e divertida para drinks com gelo e frutas.'
+    descricao: 'Taça alta e curvada, estilo furacão — para drinks longos com muito gelo.'
   }
 };
 
@@ -52,7 +62,7 @@ const GLASS_ICONS = {
   margarita: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14h48c0 8-8 10-12 14-3 3-4 6-4 9H20c0-3-1-6-4-9C12 24 8 22 8 14Z"/><path d="M32 37v17"/><path d="M20 56h24"/></svg>`,
   gin: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14c0 11 8 20 18 20s18-9 18-20"/><path d="M14 14h36"/><path d="M32 34v16"/><path d="M20 54h24"/></svg>`,
   rocks: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 12h32l-4 40H20L16 12Z"/><path d="M17 24h30"/></svg>`,
-  coquetel: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 15h42c0 12-9 22-21 22S11 27 11 15Z"/><path d="M32 37v15"/><path d="M19 55h26"/><path d="M44 9l6-4"/></svg>`
+  coquetel: `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8c2 4 3 6 3 10 0 6-3 8-3 13 0 6 5 11 12 13 7-2 12-7 12-13 0-5-3-7-3-13 0-4 1-6 3-10"/><path d="M20 8h24"/><path d="M32 44v10"/><path d="M22 56h20"/></svg>`
 };
 
 /* =========================================================
@@ -70,7 +80,6 @@ const DRINKS = [
     tags: ['seco', 'clássico', 'herbal'],
     cor: ['#cfe8d5', '#7fb69a'],
     arte: { liquido: ['#f7fbf1', '#c6ddb4'], enfeites: ['twist'] },
-    imagem: 'assets/img/dry-martini.webp',
     ingredientes: [
       '60 ml de gin Tanqueray',
       '10 ml de Martini Extra Dry',
@@ -96,7 +105,6 @@ const DRINKS = [
     tags: ['cítrico', 'clássico', 'refrescante'],
     cor: ['#f4f1e4', '#d9c48a'],
     arte: { liquido: ['#fefbf0', '#e4cf94'], enfeites: ['twist'] },
-    imagem: 'assets/img/white-lady.webp',
     ingredientes: [
       '45 ml de gin Tanqueray',
       '20 ml de Curaçau triple sec',
@@ -122,7 +130,6 @@ const DRINKS = [
     tags: ['seco', 'agave', 'clássico'],
     cor: ['#f7e6c4', '#c9a227'],
     arte: { liquido: ['#fbf8e6', '#dbc98a'], enfeites: ['azeitona'] },
-    imagem: 'assets/img/tequini.jpg',
     ingredientes: [
       '60 ml de tequila (prata de preferência)',
       '10 ml de Martini Extra Dry',
@@ -147,7 +154,6 @@ const DRINKS = [
     tags: ['seco', 'clássico', 'cítrico'],
     cor: ['#ffd9c0', '#e07a5f'],
     arte: { liquido: ['#ffd9c0', '#e07a5f'], enfeites: ['laranja'] },
-    imagem: 'assets/img/el-presidente.jpeg',
     ingredientes: [
       '45 ml de rum Bacardi Carta Blanca',
       '20 ml de Martini Extra Dry',
@@ -199,7 +205,6 @@ const DRINKS = [
     tags: ['cítrico', 'clássico', 'refrescante'],
     cor: ['#f0f7d4', '#a3c44b'],
     arte: { liquido: ['#f4fadd', '#c3da76'], gelo: 'cubos', borda: 'sal', enfeites: ['limao'] },
-    imagem: 'assets/img/margarita.jpg',
     ingredientes: [
       '50 ml de tequila',
       '25 ml de Curaçau triple sec',
@@ -224,7 +229,6 @@ const DRINKS = [
     tags: ['cítrico', 'colorido', 'refrescante'],
     cor: ['#cbe9ff', '#2b8fd6'],
     arte: { liquido: ['#abddf7', '#2b8fd6'], gelo: 'cubos', borda: 'sal', enfeites: ['limao'] },
-    imagem: 'assets/img/blue-margarita.jpeg',
     ingredientes: [
       '50 ml de tequila',
       '25 ml de Curaçau Blue',
@@ -249,7 +253,6 @@ const DRINKS = [
     tags: ['cítrico', 'frutado', 'refrescante'],
     cor: ['#ffe0b8', '#f08a24'],
     arte: { liquido: ['#ffd9a6', '#f08a24'], gelo: 'cubos', borda: 'sal', enfeites: ['tangerina'] },
-    imagem: 'assets/img/tangerine-margarita.webp',
     ingredientes: [
       '50 ml de tequila',
       '15 ml de Curaçau triple sec',
@@ -277,7 +280,6 @@ const DRINKS = [
     tags: ['refrescante', 'seco', 'herbal'],
     cor: ['#e3f2ff', '#6aa9d8'],
     arte: { liquido: ['#f2faff', '#b2d8f0'], gelo: 'cubos', enfeites: ['pepino', 'siciliano'] },
-    imagem: 'assets/img/gin-tonica.jpeg',
     ingredientes: [
       '60 ml de gin Tanqueray',
       '200 ml de água tônica bem gelada',
@@ -305,7 +307,6 @@ const DRINKS = [
     tags: ['refrescante', 'frutado', 'cítrico'],
     cor: ['#e2f7cf', '#79bd3f'],
     arte: { liquido: ['#ecf8d6', '#9acf58'], gelo: 'cubos', enfeites: ['maca', 'alecrim'] },
-    imagem: 'assets/img/gin-maca-verde.jpg',
     ingredientes: [
       '60 ml de gin Tanqueray',
       '15 ml de xarope de maçã verde',
@@ -358,7 +359,6 @@ const DRINKS = [
     tags: ['refrescante', 'amargo', 'leve'],
     cor: ['#ffd2c4', '#c0392b'],
     arte: { liquido: ['#ffbda4', '#c0392b'], gelo: 'cubos', enfeites: ['laranja'] },
-    imagem: 'assets/img/rosso-tonic.jpeg',
     ingredientes: [
       '60 ml de Martini Vermouth Rosso',
       '150 ml de água tônica gelada',
@@ -383,7 +383,6 @@ const DRINKS = [
     tags: ['refrescante', 'colorido', 'cítrico'],
     cor: ['#cdf1ff', '#1e7fb0'],
     arte: { liquido: ['#c2eaff', '#1e7fb0'], gelo: 'cubos', enfeites: ['limao', 'alecrim'] },
-    imagem: 'assets/img/blue-ocean-tonic.jpeg',
     ingredientes: [
       '50 ml de gin Tanqueray',
       '15 ml de Curaçau Blue',
@@ -411,7 +410,6 @@ const DRINKS = [
     tags: ['refrescante', 'herbal', 'cítrico'],
     cor: ['#dff6e0', '#48a860'],
     arte: { liquido: ['#ebfae7', '#8ed07e'], gelo: 'triturado', enfeites: ['hortela', 'limao'] },
-    imagem: 'assets/img/mojito.webp',
     ingredientes: [
       '50 ml de rum Bacardi Carta Blanca',
       '10 ml de licor Stock Menta',
@@ -439,7 +437,6 @@ const DRINKS = [
     tags: ['refrescante', 'cítrico', 'agave'],
     cor: ['#ffdfe0', '#e06377'],
     arte: { liquido: ['#ffd8da', '#e06377'], gelo: 'cubos', enfeites: ['limao'] },
-    imagem: 'assets/img/paloma.jpg',
     ingredientes: [
       '50 ml de tequila',
       '20 ml de suco de limão taiti',
@@ -466,7 +463,6 @@ const DRINKS = [
     tags: ['refrescante', 'seco', 'clássico'],
     cor: ['#ffe9c9', '#b8762a'],
     arte: { liquido: ['#ffdda9', '#c8862f'], gelo: 'cubos', enfeites: ['siciliano'] },
-    imagem: 'assets/img/ballantines-highball.jpeg',
     ingredientes: [
       "50 ml de whisky Ballantine's",
       '150 ml de água com gás bem gelada (ou ginger ale)',
@@ -491,7 +487,6 @@ const DRINKS = [
     tags: ['refrescante', 'frutado', 'cítrico'],
     cor: ['#e9f5cd', '#8aa63c'],
     arte: { liquido: ['#eef5cc', '#a6c14a'], gelo: 'cubos', enfeites: ['maca'] },
-    imagem: 'assets/img/old-parr-apple-highball.jpg',
     ingredientes: [
       '50 ml de whisky Old Parr',
       '10 ml de xarope de maçã verde',
@@ -543,7 +538,6 @@ const DRINKS = [
     tags: ['refrescante', 'colorido', 'cítrico'],
     cor: ['#c9edff', '#2478a8'],
     arte: { liquido: ['#aae3fb', '#2478a8'], gelo: 'cubos', enfeites: ['limao', 'cereja'] },
-    imagem: 'assets/img/blue-lagoon-seco.jpeg',
     ingredientes: [
       '50 ml de rum Bacardi Carta Blanca',
       '20 ml de Curaçau Blue',
@@ -568,7 +562,6 @@ const DRINKS = [
     tags: ['frutado', 'clássico', 'colorido'],
     cor: ['#ffd9a8', '#e2571e'],
     arte: { liquido: ['#ffc36b', '#d43a1e'], gelo: 'cubos', enfeites: ['laranja', 'cereja'] },
-    imagem: 'assets/img/tequila-sunrise.jpg',
     ingredientes: [
       '50 ml de tequila',
       '120 ml de suco de laranja natural gelado',
@@ -594,7 +587,6 @@ const DRINKS = [
     tags: ['refrescante', 'frutado', 'cítrico'],
     cor: ['#ffe3d3', '#e2865f'],
     arte: { liquido: ['#ffddc8', '#e2865f'], gelo: 'cubos', enfeites: ['siciliano', 'hortela'] },
-    imagem: 'assets/img/peach-fizz.jpeg',
     ingredientes: [
       '40 ml de gin Tanqueray',
       '15 ml de licor Stock Peach',
@@ -619,7 +611,6 @@ const DRINKS = [
     tags: ['refrescante', 'leve', 'frutado'],
     cor: ['#ffe6bd', '#e59422'],
     arte: { liquido: ['#ffe4b8', '#e59422'], gelo: 'cubos', enfeites: ['tangerina', 'hortela'] },
-    imagem: 'assets/img/tangerine-cooler.jpeg',
     ingredientes: [
       '40 ml de Martini Extra Dry',
       '15 ml de xarope de tangerina',

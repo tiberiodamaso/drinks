@@ -6,10 +6,10 @@ Cardápio interativo de coquetéis para servir aos convidados. Site 100% estáti
 ## O que ele faz
 
 - **22 drinks** refrescantes e pouco doces, cada um pensado para um dos copos disponíveis em casa.
-- **Foto em cada card**: as imagens ficam em `assets/img/` e são referenciadas pelo campo
-  `imagem` de cada drink. Quem não tem foto usa uma ilustração SVG gerada na hora
-  (copo real, cor da bebida, gelo e guarnições) — e uma foto que não carregue também
-  cai para a ilustração automaticamente.
+- **Ilustração em cada card**: por padrão cada drink mostra um SVG gerado na hora com o
+  formato real do seu copo, a cor da bebida, o gelo e as guarnições. Sem imagens externas,
+  sem requisições. Quando você tiver a foto real do drink, é só apontar o campo `imagem`
+  (veja abaixo) que ela substitui a ilustração naquele card.
 - **Selo do copo**: um chip no canto superior direito do card mostra em que peça o drink é servido.
 - **Cards que viram**: toque em qualquer card e o verso mostra ingredientes, modo de preparo, guarnição e uma dica.
 - **Botão “Quero esse”**: abre um modal de confirmação; ao confirmar, o pedido é contabilizado.
@@ -96,24 +96,30 @@ se atualizam sozinhos.
 
 ## Fotos dos drinks
 
-Coloque o arquivo em `assets/img/` e aponte o campo `imagem` do drink para ele:
+Os cards usam a ilustração SVG por padrão. Para trocar por uma foto real, coloque o arquivo
+em `assets/img/` e adicione o campo `imagem` ao drink em `assets/js/drinks.js`:
 
 ```js
-imagem: 'assets/img/mojito.webp',
+{
+  id: 'mojito',
+  nome: 'Mojito',
+  imagem: 'assets/img/mojito.webp',   // <- só isso
+  ...
+}
 ```
 
-Sem esse campo, o card usa a ilustração SVG gerada por `assets/js/art.js`. As fotos são
-exibidas com `object-fit: contain` sobre fundo branco, porque as proporções variam bastante
-(retrato, quadrada, paisagem) e `cover` cortaria a taça pela metade.
+É por drink: os que ainda não têm foto continuam com a ilustração, sem nenhum ajuste.
+Se o arquivo não carregar (nome errado, arquivo movido), o card volta sozinho para a
+ilustração — nada quebra no meio da festa.
 
-**Três drinks usam ilustração hoje:**
+O que já está resolvido no CSS:
 
-| Drink | Motivo |
-|---|---|
-| Martini de Hortelã | sem foto na pasta |
-| Caipiríssima | `caipirissima.png` tem o xadrez de transparência gravado nos pixels |
-| Gin Tônica de Framboesa e Hortelã | `gin-tonica-framboesa.png`, mesmo problema |
+- a foto aparece com `object-fit: contain` sobre fundo branco, porque as proporções variam
+  muito de foto para foto e `cover` corta a taça pela metade;
+- o card com foto perde o fundo tingido e fica branco, para a imagem não brigar com a cor;
+- toda foto entra com `loading="lazy"`, então só as visíveis são baixadas.
 
-As duas PNGs são capturas de tela de um editor, não recortes — `hasAlpha: no`, o xadrez é
-pixel de verdade e apareceria no card. Substitua os arquivos (fundo branco ou PNG com alfa
-real) e adicione o campo `imagem` no drink para ativá-las.
+**Sobre a pasta `assets/img/` hoje:** ela tem 21 imagens de uma tentativa anterior e nenhuma
+está sendo usada — pode apagar à vontade. Duas delas (`caipirissima.png` e
+`gin-tonica-framboesa.png`) têm o xadrez de transparência gravado nos pixels: são capturas
+de tela de um editor, não recortes, e apareceriam com o xadrez cinza no card.
