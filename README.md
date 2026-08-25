@@ -83,7 +83,7 @@ Inclua um objeto no array `DRINKS` em `assets/js/drinks.js`:
     gelo: 'cubos',                    // 'cubos' | 'triturado' | ausente
     borda: 'sal',                     // 'sal' | 'acucar' | ausente
     enfeites: ['limao', 'hortela']    // limao, siciliano, laranja, tangerina, hortela,
-  },                                  // cereja, azeitona, pepino, maca, framboesa, twist, alecrim
+  },                                  // cereja, azeitona, maca, framboesa, twist, alecrim
   ingredientes: ['50 ml de ...'],
   preparo: ['Passo um...'],
   guarnicao: 'O que colocar na borda',

@@ -133,12 +133,6 @@ const ART = (function () {
     </g>`;
   }
 
-  function fitaPepino(x, y) {
-    return `<path d="M${x},${y} C${x + 12},${y + 10} ${x - 10},${y + 22} ${x + 4},${y + 34}
-             C${x + 14},${y + 42} ${x + 2},${y + 52} ${x + 8},${y + 58}"
-             stroke="#8fbf63" stroke-width="5" fill="none" stroke-linecap="round" opacity=".92"/>`;
-  }
-
   function fatiaMaca(x, y, rot) {
     return `<g transform="rotate(${rot || 0} ${x} ${y})">
       <path d="M${x - 13},${y} C${x - 13},${y - 9} ${x - 6},${y - 14} ${x},${y - 14}
@@ -180,7 +174,6 @@ const ART = (function () {
     hortela:    (s) => hortela(s.topo.x + 16, s.topo.y - 22, 13),
     cereja:     (s) => cereja(s.apoio.x - 4, s.apoio.y - 12),
     azeitona:   (s) => azeitona(s.topo.x + 2, s.topo.y + 4),
-    pepino:     (s) => fitaPepino(s.topo.x - 4, s.topo.y + 14),
     maca:       (s) => fatiaMaca(s.apoio.x - 2, s.apoio.y + 2, 14),
     framboesa:  (s) => framboesas(s.apoio.x - 6, s.apoio.y - 14),
     twist:      (s) => twist(s.apoio.x - 4, s.apoio.y - 12, '#e8c02f'),

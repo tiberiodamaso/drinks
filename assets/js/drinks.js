@@ -99,7 +99,7 @@ const DRINKS = [
   {
     id: 'white-lady',
     nome: 'White Lady',
-    subtitulo: 'Cítrico, aveludado e elegante',
+    subtitulo: 'Cítrico, seco e elegante',
     copo: 'martini',
     forca: 'medio',
     tags: ['cítrico', 'clássico', 'refrescante'],
@@ -109,17 +109,16 @@ const DRINKS = [
       '45 ml de gin Tanqueray',
       '20 ml de Curaçau triple sec',
       '20 ml de suco de limão taiti fresco',
-      '1 colher de chá de clara de ovo (opcional, dá a espuma)',
       'Gelo em cubos'
     ],
     preparo: [
-      'Se for usar clara, bata tudo na coqueteleira SEM gelo por 10 segundos (dry shake).',
-      'Adicione o gelo e bata com força por mais 12 a 15 segundos.',
-      'Coe duas vezes (coador da coqueteleira + peneira fina) para a taça gelada.',
-      'Espere a espuma assentar antes de servir.'
+      'Deixe a taça no congelador por 10 minutos.',
+      'Junte o gin, o triple sec e o limão na coqueteleira com bastante gelo.',
+      'Bata com força por 12 a 15 segundos, até a coqueteleira ficar gelada por fora.',
+      'Coe duas vezes (coador da coqueteleira + peneira fina) para a taça gelada.'
     ],
-    guarnicao: 'Twist fino de limão sobre a espuma',
-    dica: 'Sem clara também fica ótimo — só perde a textura cremosa.'
+    guarnicao: 'Twist fino de limão siciliano',
+    dica: 'Coar duas vezes é o que deixa o drink limpo: sem lascas de gelo, ele não agua no meio do caminho.'
   },
   {
     id: 'tequini',
@@ -274,28 +273,27 @@ const DRINKS = [
   {
     id: 'gin-tonica-classica',
     nome: 'Gin Tônica Clássica',
-    subtitulo: 'Pepino, zimbro e muito gelo',
+    subtitulo: 'Zimbro, limão siciliano e muito gelo',
     copo: 'gin',
     forca: 'medio',
     tags: ['refrescante', 'seco', 'herbal'],
     cor: ['#e3f2ff', '#6aa9d8'],
-    arte: { liquido: ['#f2faff', '#b2d8f0'], gelo: 'cubos', enfeites: ['pepino', 'siciliano'] },
+    arte: { liquido: ['#f2faff', '#b2d8f0'], gelo: 'cubos', enfeites: ['siciliano'] },
     ingredientes: [
       '60 ml de gin Tanqueray',
       '200 ml de água tônica bem gelada',
-      '3 fitas finas de pepino',
       '4 bagas de zimbro (opcional)',
       'Casca de limão siciliano',
       'Gelo em cubos grandes — encha a taça'
     ],
     preparo: [
       'Encha a taça até a boca com gelo e gire para gelar o vidro; descarte a água.',
-      'Coloque o pepino e o zimbro entre os cubos.',
+      'Espalhe as bagas de zimbro entre os cubos.',
       'Despeje o gin sobre o gelo.',
       'Complete com a tônica escorrendo pela colher, para não perder o gás.',
       'Dê apenas UMA mexida de baixo para cima.'
     ],
-    guarnicao: 'Fita de pepino e casca de limão siciliano',
+    guarnicao: 'Casca larga de limão siciliano, torcida sobre a taça',
     dica: 'Gelo até a boca da taça derrete menos e mantém o drink seco até o fim.'
   },
   {
@@ -442,17 +440,17 @@ const DRINKS = [
       '20 ml de suco de limão taiti',
       '10 ml de xarope de tangerina',
       '1 pitada generosa de sal',
-      '150 ml de refrigerante de toranja (ou água com gás)',
+      '150 ml de água com gás bem gelada',
       'Gelo em cubos'
     ],
     preparo: [
       'Encha o copo de gelo.',
       'Adicione a tequila, o limão, o xarope e o sal.',
       'Mexa rápido para dissolver o sal.',
-      'Complete com o refrigerante de toranja e dê uma última mexida leve.'
+      'Complete com a água com gás e dê uma última mexida leve.'
     ],
     guarnicao: 'Gomo de limão e uma pitada de sal na borda',
-    dica: 'Sem toranja? Água com gás + o xarope de tangerina resolve muito bem.'
+    dica: 'O sal é o que faz a Paloma: ele arredonda a acidez e puxa o agave da tequila. Não pule a pitada.'
   },
   {
     id: 'highball-ballantines',
@@ -465,7 +463,7 @@ const DRINKS = [
     arte: { liquido: ['#ffdda9', '#c8862f'], gelo: 'cubos', enfeites: ['siciliano'] },
     ingredientes: [
       "50 ml de whisky Ballantine's",
-      '150 ml de água com gás bem gelada (ou ginger ale)',
+      '150 ml de água com gás bem gelada',
       'Casca de limão siciliano',
       'Gelo em cubos grandes'
     ],
