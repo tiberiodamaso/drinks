@@ -6,6 +6,7 @@
   <meta name="description" content="Cardápio de drinks autorais e clássicos. Escolha o seu, veja a receita e faça o pedido.">
   <meta name="theme-color" content="#fdf8f1">
   <title>Bar do Tibs · Cardápio de Drinks</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +22,7 @@
 <nav class="navbar navbar-expand-lg bar-nav sticky-top">
   <div class="container">
     <a class="navbar-brand" href="#" data-view-link="cardapio">
-      <span class="brand-mark">&#127864;</span>
+      <img class="brand-mark" src="assets/img/logo.svg" alt="" width="36" height="36">
       <span class="brand-text">Bar do Tibs</span>
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -203,6 +204,24 @@
     <div class="row g-4" id="glassGrid"></div>
   </section>
 </main>
+
+<!-- ============ GAVETA DA RECEITA (celular) ============ -->
+<div class="modal fade recipe-sheet" id="recipeSheet" tabindex="-1" aria-labelledby="recipeSheetLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="modal-hero" id="sheetHero"></div>
+        <h2 class="modal-title" id="recipeSheetLabel">—</h2>
+        <p class="back-glass" id="sheetGlass"></p>
+        <div class="sheet-recipe" id="sheetRecipe"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-gold" id="sheetOrderBtn">Quero esse</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============ MODAL DE CONFIRMAÇÃO ============ -->
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">

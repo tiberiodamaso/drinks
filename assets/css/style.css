@@ -80,13 +80,9 @@ h1, h2, h3 {
 }
 .navbar-brand:hover { color: var(--brand); }
 .brand-mark {
-  display: grid;
-  place-items: center;
-  width: 34px; height: 34px;
-  border-radius: 11px;
-  background: linear-gradient(145deg, var(--brand-bright), var(--brand));
-  color: #fff;
-  font-size: 1.05rem;
+  display: block;
+  width: 36px; height: 36px;
+  border-radius: 10px;
   box-shadow: var(--shadow-sm);
 }
 .brand-text { line-height: 1; }
@@ -233,6 +229,8 @@ h1, h2, h3 {
   perspective: 1800px;
   height: 452px;
   cursor: pointer;
+  /* sem zoom de toque duplo: toques rápidos viravam gesto de zoom */
+  touch-action: manipulation;
 }
 .flip-card-inner {
   position: relative;
@@ -258,6 +256,11 @@ h1, h2, h3 {
   transition: box-shadow .25s ease;
 }
 .flip-back { transform: rotateY(180deg); }
+
+/* Telas de toque: card plano, sem 3D (a receita abre na gaveta) */
+.flip-card.is-static { perspective: none; }
+.flip-card.is-static .flip-card-inner { transform-style: flat; transition: none; }
+.flip-card.is-static .flip-face { backface-visibility: visible; -webkit-backface-visibility: visible; }
 
 .flip-card:hover .flip-front { box-shadow: var(--shadow-lg); }
 .flip-card:focus-visible { outline: none; }
@@ -302,8 +305,9 @@ h1, h2, h3 {
   display: inline-flex;
   align-items: center;
   gap: .32rem;
-  background: rgba(255, 255, 255, .93);
-  backdrop-filter: blur(6px);
+  /* sem backdrop-filter: um desfoque por card (22) estourava a memória
+     de GPU do Safari no iPhone; com fundo .95 a diferença nem aparece */
+  background: rgba(255, 255, 255, .95);
   border: 1px solid var(--line-2);
   border-radius: 999px;
   padding: .28rem .62rem .28rem .45rem;
@@ -734,6 +738,39 @@ ol.recipe-list li::before {
 }
 .modal-backdrop.show { opacity: .38; }
 
+/* --- Gaveta da receita: sobe de baixo, só ela rola --- */
+.recipe-sheet .modal-dialog {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  max-height: 92dvh;
+  margin: 0 auto;
+  display: flex;
+}
+.recipe-sheet.fade .modal-dialog { transform: translateY(100%); transition: transform .32s cubic-bezier(.32, .9, .3, 1); }
+.recipe-sheet.show .modal-dialog { transform: none; }
+.recipe-sheet .modal-content {
+  max-height: 92dvh;
+  border-radius: 24px 24px 0 0;
+  border-bottom: 0;
+}
+.recipe-sheet .modal-body {
+  padding: 0 1.5rem 1.2rem;
+  overscroll-behavior: contain;
+}
+.recipe-sheet .modal-hero { margin: 0 -1.5rem 1.1rem; }
+.recipe-sheet .modal-title { font-size: 1.85rem; margin-bottom: .3rem; }
+.recipe-sheet .back-glass { margin-bottom: 1.1rem; }
+.recipe-sheet .recipe-list li { font-size: .92rem; }
+.recipe-sheet .modal-footer {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  padding: .9rem 1.5rem calc(.9rem + env(safe-area-inset-bottom));
+}
+.recipe-sheet .modal-footer .btn { flex: 1; width: auto; }
+
 /* ---------------- Toast ---------------- */
 #orderToast {
   background: var(--surface);
@@ -780,6 +817,16 @@ ol.recipe-list li::before {
   .chart-wrap { height: 480px; }
   .modal-footer { flex-direction: column-reverse; }
   .modal-footer .btn { width: 100%; }
+}
+
+/* Telas de toque (iPhone): sem efeitos que viram camadas de GPU extras */
+@media (hover: none) {
+  body { background-attachment: scroll; }
+  .bar-nav {
+    background: rgba(253, 248, 241, .97);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -129,6 +129,8 @@
   const ICON_FLIP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
     stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
     <path d="M21 3v5h-5"/></svg>`;
+  const ICON_RECIPE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>`;
   const ICON_BACK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
     stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>`;
 
@@ -176,23 +178,40 @@
     });
   }
 
-  function buildCard(drink, counts) {
-    const glass = GLASSES[drink.copo];
-    const qty = counts[drink.id] || 0;
-    const [light, accent] = drink.cor;
+  // No toque não existe hover: o card não gira, a receita abre numa gaveta.
+  // Giro 3D + rolagem interna travava a rolagem da página no iOS.
+  const touchQuery = window.matchMedia('(hover: none)');
+  const usaGaveta = () => touchQuery.matches;
 
+  function recipeHtml(drink) {
     const ingredientes = drink.ingredientes
       .map((i) => `<li>${escapeHtml(i)}</li>`).join('');
     const preparo = drink.preparo
       .map((p) => `<li>${escapeHtml(p)}</li>`).join('');
+    return `
+      <p class="recipe-label">Ingredientes</p>
+      <ul class="recipe-list">${ingredientes}</ul>
+      <p class="recipe-label">Modo de preparo</p>
+      <ol class="recipe-list">${preparo}</ol>
+      <p class="recipe-label">Guarnição</p>
+      <p class="recipe-note">${escapeHtml(drink.guarnicao)}</p>
+      <div class="recipe-tip"><strong>Dica:</strong> ${escapeHtml(drink.dica)}</div>`;
+  }
+
+  function buildCard(drink, counts) {
+    const glass = GLASSES[drink.copo];
+    const qty = counts[drink.id] || 0;
+    const [light, accent] = drink.cor;
+    const gaveta = usaGaveta();
+
     const tags = drink.tags
       .map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
 
     const col = document.createElement('div');
     col.className = 'col-12 col-sm-6 col-lg-4 col-xxl-3';
     col.innerHTML = `
-      <article class="flip-card" data-drink="${drink.id}" tabindex="0" role="button"
-               aria-label="${escapeHtml(drink.nome)} — toque para ver a receita"
+      <article class="flip-card${gaveta ? ' is-static' : ''}" data-drink="${drink.id}" tabindex="0" role="button"
+               aria-label="${escapeHtml(drink.nome)} — toque para ver a receita"${gaveta ? ' aria-haspopup="dialog"' : ''}
                style="--card-accent:${accent}; --card-glow:${hexToRgba(light, .16)}">
         <div class="flip-card-inner">
 
@@ -211,30 +230,22 @@
             </div>
             <div class="card-front-foot">
               ${strengthDots(drink.forca)}
-              <span class="flip-hint">${ICON_FLIP} Ver receita</span>
+              <span class="flip-hint">${gaveta ? ICON_RECIPE : ICON_FLIP} Ver receita</span>
             </div>
           </div>
 
-          <div class="flip-face flip-back">
+          ${gaveta ? '' : `<div class="flip-face flip-back">
             <div class="back-head">
               <h3 class="back-title">${escapeHtml(drink.nome)}</h3>
               <span class="back-glass">${GLASS_ICONS[drink.copo]}${escapeHtml(glass.nome)} · ${escapeHtml(glass.volume)}</span>
             </div>
-            <div class="back-scroll">
-              <p class="recipe-label">Ingredientes</p>
-              <ul class="recipe-list">${ingredientes}</ul>
-              <p class="recipe-label">Modo de preparo</p>
-              <ol class="recipe-list">${preparo}</ol>
-              <p class="recipe-label">Guarnição</p>
-              <p class="recipe-note">${escapeHtml(drink.guarnicao)}</p>
-              <div class="recipe-tip"><strong>Dica:</strong> ${escapeHtml(drink.dica)}</div>
-            </div>
+            <div class="back-scroll">${recipeHtml(drink)}</div>
             <div class="back-foot">
               <button type="button" class="btn btn-back" data-action="voltar"
                       aria-label="Voltar para a frente do card">${ICON_BACK}</button>
               <button type="button" class="btn btn-gold" data-action="pedir">Quero esse</button>
             </div>
-          </div>
+          </div>`}
 
         </div>
       </article>`;
@@ -275,6 +286,7 @@
      Flip + ações dos cards
      --------------------------------------------------------- */
   function flipCard(card, flipped) {
+    if (card.classList.contains('is-static')) return;
     card.classList.toggle('is-flipped', flipped);
     card.setAttribute('aria-label',
       `${card.querySelector('.card-name').textContent} — toque para ${flipped ? 'voltar' : 'ver a receita'}`);
@@ -295,6 +307,11 @@
         return;
       }
 
+      if (card.classList.contains('is-static')) {
+        openRecipe(card.dataset.drink);
+        return;
+      }
+
       // Deixa o usuário rolar/selecionar a receita sem desvirar o card
       if (ev.target.closest('.back-scroll')) return;
 
@@ -306,10 +323,44 @@
       if (!card || ev.target !== card) return;
       if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') {
         ev.preventDefault();
-        flipCard(card, !card.classList.contains('is-flipped'));
+        if (card.classList.contains('is-static')) openRecipe(card.dataset.drink);
+        else flipCard(card, !card.classList.contains('is-flipped'));
       }
       if (ev.key === 'Escape') flipCard(card, false);
     });
+  }
+
+  /* ---------------------------------------------------------
+     Gaveta da receita (telas de toque)
+     --------------------------------------------------------- */
+  let recipeSheet = null;
+
+  function openRecipe(drinkId) {
+    const drink = DRINKS.find((d) => d.id === drinkId);
+    if (!drink) return;
+    const glass = GLASSES[drink.copo];
+
+    const sheet = $('#recipeSheet');
+    sheet.dataset.drink = drink.id;
+    const hero = $('#sheetHero');
+    hero.dataset.drink = drink.id;
+    hero.classList.toggle('tem-arte', !drink.imagem);
+    hero.innerHTML = drinkMedia(drink, 'sheet-' + drink.id);
+    hero.style.setProperty('--card-glow', hexToRgba(drink.cor[0], .3));
+    $('#recipeSheetLabel').textContent = drink.nome;
+    $('#sheetGlass').innerHTML =
+      `${GLASS_ICONS[drink.copo]}${escapeHtml(glass.nome)} · ${escapeHtml(glass.volume)}`;
+    $('#sheetRecipe').innerHTML = recipeHtml(drink);
+    sheet.querySelector('.modal-body').scrollTop = 0;
+
+    recipeSheet.show();
+  }
+
+  function orderFromSheet() {
+    const drinkId = $('#recipeSheet').dataset.drink;
+    // Bootstrap não abre um modal enquanto outro ainda está fechando
+    $('#recipeSheet').addEventListener('hidden.bs.modal', () => openConfirm(drinkId), { once: true });
+    recipeSheet.hide();
   }
 
   /* ---------------------------------------------------------
@@ -661,6 +712,7 @@
      --------------------------------------------------------- */
   function init() {
     confirmModal = new bootstrap.Modal($('#confirmModal'));
+    recipeSheet = new bootstrap.Modal($('#recipeSheet'));
     toast = new bootstrap.Toast($('#orderToast'), { delay: 3800 });
 
     renderGlassFilters();
@@ -668,6 +720,10 @@
     bindGridEvents();
     bindFallbackDeImagem($('#drinkGrid'));
     bindFallbackDeImagem($('#modalGlassIcon'));
+    bindFallbackDeImagem($('#sheetHero'));
+    // iOS < 14 só conhece a API antiga
+    if (touchQuery.addEventListener) touchQuery.addEventListener('change', renderGrid);
+    else touchQuery.addListener(renderGrid);
     updateNavBadge();
 
     // Navegação
@@ -708,6 +764,7 @@
 
     // Modal
     $('#confirmOrderBtn').addEventListener('click', confirmOrder);
+    $('#sheetOrderBtn').addEventListener('click', orderFromSheet);
     $('#confirmModal').addEventListener('hidden.bs.modal', () => { state.pendingDrink = null; });
 
     // Ferramentas
