@@ -7,6 +7,10 @@
   const STORAGE_KEY = 'bar-do-tibs:pedidos:v1';
   const STORAGE_KEY_LEGADO = 'bar-da-casa:pedidos:v1';
 
+  // A contagem segue sendo gravada, mas fica fora da tela enquanto cada
+  // aparelho tem o seu placar. Religar junto com o menu "Mais pedidos".
+  const MOSTRAR_CONTAGEM = false;
+
   /* ---------------------------------------------------------
      Persistência (localStorage)
      Formato: { "<drink-id>": <quantidade>, ... }
@@ -217,7 +221,7 @@
 
           <div class="flip-face flip-front">
             <div class="card-media${drink.imagem ? '' : ' tem-arte'}">
-              ${qty > 0 ? `<span class="order-count-badge" data-qty-badge>${qty} pedido${qty > 1 ? 's' : ''}</span>` : ''}
+              ${MOSTRAR_CONTAGEM && qty > 0 ? `<span class="order-count-badge" data-qty-badge>${qty} pedido${qty > 1 ? 's' : ''}</span>` : ''}
               <span class="glass-chip" title="Servido na ${escapeHtml(glass.nome)} de ${escapeHtml(glass.volume)}">
                 ${GLASS_ICONS[drink.copo]}${escapeHtml(glass.curto)}
               </span>
@@ -399,7 +403,9 @@
 
     updateCardBadge(drink.id, novaQtd);
     updateNavBadge();
-    showToast(`<strong>${escapeHtml(drink.nome)}</strong> anotado! Já são ${novaQtd} pedido${novaQtd > 1 ? 's' : ''} desse drink.`);
+    showToast(MOSTRAR_CONTAGEM
+      ? `<strong>${escapeHtml(drink.nome)}</strong> anotado! Já são ${novaQtd} pedido${novaQtd > 1 ? 's' : ''} desse drink.`
+      : `<strong>${escapeHtml(drink.nome)}</strong> anotado! O bartender já vai preparar.`);
 
     // Devolve o card para a frente para deixar o cardápio limpo
     const card = $(`.flip-card[data-drink="${drink.id}"]`);
@@ -409,6 +415,7 @@
   }
 
   function updateCardBadge(drinkId, qty) {
+    if (!MOSTRAR_CONTAGEM) return;
     const card = $(`.flip-card[data-drink="${drinkId}"]`);
     if (!card) return;
     let badge = card.querySelector('[data-qty-badge]');
@@ -422,6 +429,7 @@
   }
 
   function updateNavBadge() {
+    if (!MOSTRAR_CONTAGEM) return;
     const total = Object.values(Store.read()).reduce((a, b) => a + b, 0);
     const badge = $('#navTotalBadge');
     badge.textContent = total;
@@ -639,7 +647,7 @@
             <p class="glass-desc">${escapeHtml(glass.descricao)}</p>
             <p class="glass-count">
               <strong>${drinks.length}</strong> ${drinks.length === 1 ? 'drink' : 'drinks'} no cardápio
-              · <strong>${pedidos}</strong> ${pedidos === 1 ? 'pedido' : 'pedidos'}
+              ${MOSTRAR_CONTAGEM ? `· <strong>${pedidos}</strong> ${pedidos === 1 ? 'pedido' : 'pedidos'}` : ''}
             </p>
           </div>
         </div>`;
