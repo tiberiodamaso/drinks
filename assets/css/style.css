@@ -787,6 +787,125 @@ ol.recipe-list li::before {
 .site-footer { border-top: 1px solid var(--line); padding: 2rem 0; text-align: center; }
 .site-footer p { color: var(--ink-dim); font-size: .8rem; margin: 0; }
 
+/* ---------------- Lista de compras ---------------- */
+.compras-secao { border: 0; margin: 0 0 1.4rem; padding: 0; min-width: 0; }
+.compras-secao legend { float: none; width: auto; margin-bottom: .35rem; }
+
+.compra-item {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .7rem .2rem;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.compra-item:last-child { border-bottom: none; }
+.compra-item .form-check-input {
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+  border-color: var(--line-2);
+  cursor: pointer;
+}
+.compra-item .form-check-input:checked { background-color: var(--mint); border-color: var(--mint); }
+.compra-item .form-check-input:focus { box-shadow: 0 0 0 .2rem var(--brand-tint); border-color: var(--brand-bright); }
+
+.compra-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.compra-nome { font-size: .96rem; font-weight: 500; color: var(--ink); }
+.compra-drinks { font-size: .73rem; color: var(--ink-dim); line-height: 1.45; }
+
+.compra-qtd {
+  flex: 0 0 auto;
+  max-width: 45%;
+  text-align: right;
+  font-size: .86rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+.compra-qtd small { display: block; font-size: .68rem; font-weight: 500; color: var(--ink-dim); }
+
+.compra-item.is-tenho .compra-nome { color: var(--ink-dim); text-decoration: line-through; }
+.compra-item.is-tenho .compra-qtd { color: var(--ink-dim); }
+
+.compras-tools { margin-top: .6rem; }
+
+.compras-falta { position: sticky; top: 90px; }
+.falta-list { list-style: none; padding: 0; margin: 0; }
+.falta-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: .8rem;
+  padding: .5rem 0;
+  border-bottom: 1px dashed var(--line-2);
+  font-size: .9rem;
+}
+.falta-list li:last-child { border-bottom: none; }
+.falta-list strong { color: var(--brand); font-weight: 600; text-align: right; }
+.falta-vazia { color: var(--mint); font-weight: 600; text-align: center; margin: .5rem 0 0; }
+
+@media (max-width: 991.98px) {
+  .compras-falta { position: static; }
+}
+@media (max-width: 575.98px) {
+  /* no celular a quantidade desce para baixo do nome, sem espremer o texto */
+  .compra-item { flex-wrap: wrap; row-gap: .15rem; }
+  .compra-qtd { flex-basis: 100%; max-width: none; text-align: left; padding-left: 2.15rem; }
+  .compra-qtd small { display: inline; margin-left: .35rem; }
+  .estoque-item { flex-wrap: wrap; row-gap: .35rem; }
+  .estoque-item .compra-info { flex-basis: calc(100% - 2.2rem); }
+  .estoque-item:not(.is-tem) .estoque-qtd { display: none; }
+  .estoque-qtd { flex-basis: 100%; padding-left: 2.15rem; }
+  .estoque-qtd small { min-width: 0; }
+}
+
+/* ---------------- Meu bar ---------------- */
+.estoque-item .compra-info { cursor: pointer; margin: 0; }
+.estoque-item:not(.is-tem) .compra-nome { color: var(--ink-soft); }
+.estoque-qtd {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .72rem;
+  color: var(--ink-dim);
+}
+.estoque-qtd small { font-size: .72rem; min-width: 5.4rem; }
+.estoque-qtd .form-control {
+  width: 4.6rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-color: var(--line-2);
+}
+.estoque-qtd .form-control:focus { border-color: var(--brand-bright); box-shadow: 0 0 0 .2rem var(--brand-tint); }
+.estoque-qtd .form-control:disabled { background: var(--surface-2); opacity: .6; }
+
+.pode-item { display: flex; align-items: center; gap: .85rem; padding: .6rem 0; border-bottom: 1px solid var(--line); }
+.pode-item:last-child { border-bottom: none; }
+.pode-info { flex: 1; min-width: 0; display: flex; flex-direction: column; border-left: 3px solid var(--card-accent); padding-left: .7rem; }
+.pode-nome { font-size: .96rem; font-weight: 500; color: var(--ink); }
+.pode-copo { display: inline-flex; align-items: center; gap: .3rem; font-size: .73rem; color: var(--ink-dim); }
+.pode-copo svg { width: 14px; height: 14px; }
+.estoque-vazio { color: var(--ink-dim); font-weight: 500; }
+/* Cormorant tem numeral antigo: o "1" parece um "I" */
+.pode-item .rank-qty { font-family: var(--bs-body-font-family); font-size: 1.25rem; }
+#estoqueResultado { scroll-margin-top: 84px; }
+
+.estoque-atalho { display: none; }
+@media (max-width: 991.98px) {
+  .estoque-atalho {
+    display: block;
+    position: sticky;
+    bottom: 1rem;
+    z-index: 5;
+    margin: 0 auto 1rem;
+    border-radius: 999px;
+    padding-inline: 1.4rem;
+    box-shadow: var(--shadow-lg);
+  }
+}
+.estoque-quase-label { margin-top: 1.4rem; }
+
 /* ---------------- View transitions ---------------- */
 .view { animation: fadeUp .36s ease both; }
 @keyframes fadeUp {

@@ -626,3 +626,78 @@ const DRINKS = [
     dica: 'Fica em torno de 8% de álcool — ideal para começar a noite ou para quem vai dirigir depois de comer.'
   }
 ];
+
+/* =========================================================
+   LISTA DE COMPRAS
+   Quantidade para fazer DOSES_POR_DRINK de cada drink do cardápio.
+
+   busca    regex aplicada às linhas de `ingredientes`; define em quais
+            drinks o item aparece e, nas linhas "NN ml de ...", quantos
+            ml entram na conta.
+   extraMl  ml por dose de linhas sem medida (ex.: "para completar").
+   rende    ml por embalagem (garrafa, lata) ou por fruta (suco).
+   extraUn  unidades por dose além do suco (gomos, rodelas, cascas).
+   qtd      quantidade fixa, para o que não dá para medir em ml.
+   fruta    em "Meu bar", o estoque é contado em frutas, não em embalagens.
+   opcional em "Meu bar", a falta dele não impede o drink.
+   ========================================================= */
+const DOSES_POR_DRINK = 3;
+
+const LISTA_COMPRAS = [
+  {
+    secao: 'Destilados',
+    itens: [
+      { id: 'gin', nome: 'Gin Tanqueray', busca: /gin tanqueray/i, rende: 750, emb: ['garrafa', 'garrafas'] },
+      { id: 'tequila', nome: 'Tequila prata', busca: /ml de tequila/i, rende: 750, emb: ['garrafa', 'garrafas'] },
+      { id: 'rum', nome: 'Rum Bacardi Carta Blanca', busca: /bacardi/i, rende: 980, emb: ['garrafa', 'garrafas'] },
+      { id: 'ballantines', nome: "Whisky Ballantine's", busca: /ballantine/i, rende: 1000, emb: ['garrafa', 'garrafas'] },
+      { id: 'old-parr', nome: 'Whisky Old Parr', busca: /old parr/i, rende: 1000, emb: ['garrafa', 'garrafas'] }
+    ]
+  },
+  {
+    secao: 'Vermutes e licores',
+    itens: [
+      { id: 'extra-dry', nome: 'Martini Extra Dry', busca: /extra dry/i, rende: 750, emb: ['garrafa', 'garrafas'] },
+      { id: 'rosso', nome: 'Martini Vermouth Rosso', busca: /vermouth rosso/i, rende: 750, emb: ['garrafa', 'garrafas'] },
+      { id: 'triple-sec', nome: 'Curaçau triple sec', busca: /triple sec/i, rende: 720, emb: ['garrafa', 'garrafas'] },
+      { id: 'curacau-blue', nome: 'Curaçau Blue', busca: /curaçau blue/i, rende: 720, emb: ['garrafa', 'garrafas'] },
+      { id: 'stock-menta', nome: 'Licor Stock Menta', busca: /stock menta/i, rende: 720, emb: ['garrafa', 'garrafas'] },
+      { id: 'stock-peach', nome: 'Licor Stock Peach', busca: /stock peach/i, rende: 720, emb: ['garrafa', 'garrafas'] }
+    ]
+  },
+  {
+    secao: 'Xaropes',
+    itens: [
+      { id: 'xarope-tangerina', nome: 'Xarope de tangerina', busca: /xarope de tangerina/i, rende: 700, emb: ['garrafa', 'garrafas'] },
+      { id: 'xarope-maca', nome: 'Xarope de maçã verde', busca: /xarope de maçã verde/i, rende: 700, emb: ['garrafa', 'garrafas'] },
+      { id: 'xarope-framboesa', nome: 'Xarope de framboesa', busca: /xarope de framboesa/i, rende: 700, emb: ['garrafa', 'garrafas'] },
+      { id: 'grenadine', nome: 'Xarope de grenadine', busca: /grenadine/i, rende: 700, emb: ['garrafa', 'garrafas'] }
+    ]
+  },
+  {
+    secao: 'Para completar',
+    itens: [
+      { id: 'tonica', nome: 'Água tônica', busca: /ml de água tônica/i, rende: 350, emb: ['lata de 350 ml', 'latas de 350 ml'] },
+      { id: 'agua-gas', nome: 'Água com gás', busca: /água com gás/i, extraMl: { mojito: 100 }, rende: 1500, emb: ['garrafa de 1,5 L', 'garrafas de 1,5 L'] }
+    ]
+  },
+  {
+    secao: 'Hortifrúti',
+    itens: [
+      { id: 'limao-taiti', nome: 'Limão taiti', busca: /limão taiti/i, fruta: true, rende: 30, extraUn: { caipirissima: 1 }, emb: ['limão', 'limões'], nota: '~30 ml de suco por limão' },
+      { id: 'laranja', nome: 'Laranja', busca: /laranja/i, fruta: true, rende: 120, extraUn: { 'rosso-tonic': 0.5, 'margarita-tangerina': 0.34 }, emb: ['laranja', 'laranjas'], nota: 'suco, rodelas e raspas' },
+      { id: 'siciliano', nome: 'Limão siciliano', busca: /siciliano/i, qtd: '2 unidades', nota: 'só a casca' },
+      { id: 'hortela', nome: 'Hortelã', busca: /hortelã/i, qtd: '2 maços' },
+      { id: 'maca-verde', nome: 'Maçã verde', busca: /fatias.*maçã verde/i, qtd: '2 unidades' },
+      { id: 'zimbro', nome: 'Bagas de zimbro', busca: /zimbro/i, qtd: '1 pacotinho', nota: 'opcional', opcional: true }
+    ]
+  },
+  {
+    secao: 'Despensa e gelo',
+    itens: [
+      { id: 'acucar', nome: 'Açúcar', busca: /açúcar/i, qtd: '1 pacote pequeno' },
+      { id: 'sal-grosso', nome: 'Sal grosso', busca: /\bsal\b/i, qtd: '1 pacote' },
+      { id: 'gelo', nome: 'Gelo em cubos', busca: /gelo/i, qtd: '4 sacos de 5 kg', nota: 'reserve 1 saco para triturar' }
+    ]
+  }
+];

@@ -6,6 +6,8 @@
 
   const STORAGE_KEY = 'bar-do-tibs:pedidos:v1';
   const STORAGE_KEY_LEGADO = 'bar-da-casa:pedidos:v1';
+  const STORAGE_KEY_COMPRAS = 'bar-do-tibs:compras:v1';
+  const STORAGE_KEY_ESTOQUE = 'bar-do-tibs:estoque:v1';
 
   // A contagem segue sendo gravada, mas fica fora da tela enquanto cada
   // aparelho tem o seu placar. Religar junto com o menu "Mais pedidos".
@@ -143,7 +145,7 @@
      --------------------------------------------------------- */
   function showView(name) {
     state.view = name;
-    ['cardapio', 'ranking', 'copos'].forEach((v) => {
+    ['cardapio', 'ranking', 'copos', 'compras', 'estoque'].forEach((v) => {
       const el = document.getElementById('view-' + v);
       if (el) el.hidden = v !== name;
     });
@@ -153,6 +155,8 @@
 
     if (name === 'ranking') renderRanking();
     if (name === 'copos') renderGlasses();
+    if (name === 'compras') renderCompras();
+    if (name === 'estoque') renderEstoque();
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -655,6 +659,296 @@
   }
 
   /* ---------------------------------------------------------
+     Lista de compras
+     Marcado = "já tenho". O que fica desmarcado vai para "Falta comprar".
+     --------------------------------------------------------- */
+  const Tenho = {
+    read() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_COMPRAS) || '[]');
+        return new Set(Array.isArray(data) ? data : []);
+      } catch (err) {
+        return new Set();
+      }
+    },
+    write(set) {
+      try { localStorage.setItem(STORAGE_KEY_COMPRAS, JSON.stringify([...set])); } catch (err) { /* ignorado */ }
+    }
+  };
+
+  const fmtNum = (n) => n.toLocaleString('pt-BR');
+
+  // Quanto uma dose de `drink` pede de `item` (null se o drink não usa)
+  function necessidadePorDose(item, drink) {
+    const linhas = drink.ingredientes.filter((i) => item.busca.test(i));
+    const extraMl = (item.extraMl && item.extraMl[drink.id]) || 0;
+    const extraUn = (item.extraUn && item.extraUn[drink.id]) || 0;
+    if (!linhas.length && !extraMl && !extraUn) return null;
+    let ml = extraMl;
+    linhas.forEach((l) => {
+      const m = l.match(/^(\d+)\s*ml\b/i);
+      if (m) ml += Number(m[1]);
+    });
+    return { ml, un: extraUn };
+  }
+
+  const itensDoCatalogo = () => LISTA_COMPRAS.reduce((acc, sec) => acc.concat(sec.itens), []);
+
+  // Soma o que cada item pede em todas as receitas, vezes DOSES_POR_DRINK
+  function calcularItem(item) {
+    const drinks = [];
+    let ml = 0;
+    let un = 0;
+    DRINKS.forEach((drink) => {
+      const nec = necessidadePorDose(item, drink);
+      if (!nec) return;
+      drinks.push(drink.nome);
+      ml += nec.ml;
+      un += nec.un;
+    });
+    ml *= DOSES_POR_DRINK;
+    un *= DOSES_POR_DRINK;
+
+    let qtd = item.qtd;
+    let detalhe = item.nota || '';
+    if (!qtd) {
+      const n = Math.max(1, Math.ceil(ml / item.rende + un));
+      qtd = `${n} ${item.emb[n === 1 ? 0 : 1]}`;
+      // bebidas mostram o volume total; frutas mostram a nota de rendimento
+      if (!item.nota) detalhe = `${fmtNum(ml)} ml no total`;
+    }
+    return { qtd, detalhe, drinks };
+  }
+
+  function comprasCalculadas() {
+    return LISTA_COMPRAS.map((sec) => ({
+      secao: sec.secao,
+      itens: sec.itens.map((item) => Object.assign({ id: item.id, nome: item.nome }, calcularItem(item)))
+    }));
+  }
+
+  function renderCompras() {
+    const tenho = Tenho.read();
+    const secoes = comprasCalculadas();
+
+    $('#comprasSub').innerHTML = `Tudo para fazer pelo menos ${DOSES_POR_DRINK} de cada um dos
+      ${DRINKS.length} drinks do cardápio. Marque o que você já tem em casa —
+      o que ficar desmarcado é o que falta comprar.`;
+
+    $('#comprasSecoes').innerHTML = secoes.map((sec) => `
+      <fieldset class="compras-secao">
+        <legend class="recipe-label">${escapeHtml(sec.secao)}</legend>
+        ${sec.itens.map((it) => `
+          <label class="compra-item${tenho.has(it.id) ? ' is-tenho' : ''}">
+            <input type="checkbox" class="form-check-input" data-compra="${it.id}"${tenho.has(it.id) ? ' checked' : ''}>
+            <span class="compra-info">
+              <span class="compra-nome">${escapeHtml(it.nome)}</span>
+              <span class="compra-drinks">${it.drinks.length > 6
+                ? `Usado em ${it.drinks.length} drinks`
+                : escapeHtml(it.drinks.join(', '))}</span>
+            </span>
+            <span class="compra-qtd">${escapeHtml(it.qtd)}
+              ${it.detalhe ? `<small>${escapeHtml(it.detalhe)}</small>` : ''}</span>
+          </label>`).join('')}
+      </fieldset>`).join('');
+
+    renderFalta(secoes, tenho);
+  }
+
+  function renderFalta(secoes, tenho) {
+    const todos = secoes.reduce((acc, sec) => acc.concat(sec.itens), []);
+    const falta = todos.filter((it) => !tenho.has(it.id));
+
+    $('#comprasProgresso').textContent = `${todos.length - falta.length} de ${todos.length} em casa`;
+    $('#comprasFaltaQtd').textContent = falta.length
+      ? `${falta.length} ${falta.length === 1 ? 'item' : 'itens'}` : '';
+    $('#comprasFalta').innerHTML = falta.map((it) => `
+      <li><span>${escapeHtml(it.nome)}</span><strong>${escapeHtml(it.qtd)}</strong></li>`).join('');
+    $('#comprasTudoOk').hidden = falta.length > 0;
+    $('#comprasCopiar').hidden = falta.length === 0;
+  }
+
+  function toggleCompra(id, marcado) {
+    const tenho = Tenho.read();
+    if (marcado) tenho.add(id); else tenho.delete(id);
+    Tenho.write(tenho);
+    const input = $(`[data-compra="${id}"]`);
+    if (input) input.closest('.compra-item').classList.toggle('is-tenho', marcado);
+    renderFalta(comprasCalculadas(), tenho);
+  }
+
+  function textoFalta() {
+    const tenho = Tenho.read();
+    const linhas = comprasCalculadas()
+      .map((sec) => {
+        const itens = sec.itens.filter((it) => !tenho.has(it.id));
+        if (!itens.length) return '';
+        return `*${sec.secao}*\n` + itens.map((it) => `- ${it.nome}: ${it.qtd}`).join('\n');
+      })
+      .filter(Boolean);
+    return `Lista de compras · Bar do Tibs\n\n${linhas.join('\n\n')}`;
+  }
+
+  async function copiarFalta() {
+    const texto = textoFalta();
+    try {
+      await navigator.clipboard.writeText(texto);
+      showToast('Lista copiada! É só colar no WhatsApp ou nas notas.');
+    } catch (err) {
+      // Sem permissão de área de transferência (ex.: http): usa o compartilhar do sistema
+      if (navigator.share) {
+        navigator.share({ text: texto }).catch(() => {});
+      } else {
+        showToast('Não consegui copiar automaticamente neste navegador.');
+      }
+    }
+  }
+
+  function limparCompras() {
+    Tenho.write(new Set());
+    renderCompras();
+  }
+
+  /* ---------------------------------------------------------
+     Meu bar: o que tenho em casa -> quais drinks dá para fazer
+     Estoque: { "<item-id>": quantidade } — em embalagens (garrafas,
+     latas) ou em frutas; itens sem medida guardam só `true`.
+     --------------------------------------------------------- */
+  const Estoque = {
+    read() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_ESTOQUE) || '{}');
+        return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+      } catch (err) {
+        return {};
+      }
+    },
+    write(data) {
+      try { localStorage.setItem(STORAGE_KEY_ESTOQUE, JSON.stringify(data)); } catch (err) { /* ignorado */ }
+    }
+  };
+
+  const medido = (item) => !item.qtd; // tem rende/emb: dá para contar quantidade
+  const qtdPadrao = (item) => (item.fruta ? 10 : 1);
+
+  // Quantas doses de cada drink o estoque permite, e o que falta
+  function drinksPossiveis(estoque) {
+    const itens = itensDoCatalogo();
+    return DRINKS.map((drink) => {
+      let doses = Infinity;
+      const faltam = [];
+      itens.forEach((item) => {
+        const nec = necessidadePorDose(item, drink);
+        if (!nec || item.opcional) return;
+        const tem = estoque[item.id];
+        if (tem === undefined) { faltam.push(item.nome); doses = 0; return; }
+        if (!medido(item)) return;
+        // frutas: suco convertido em unidades + gomos/rodelas; bebidas: ml
+        const porDose = item.fruta ? nec.ml / item.rende + nec.un : nec.ml;
+        const disponivel = item.fruta ? Number(tem) : Number(tem) * item.rende;
+        if (porDose <= 0) return;
+        const d = Math.floor(disponivel / porDose + 1e-9);
+        if (d < 1) faltam.push(`${item.nome} (acabou)`);
+        doses = Math.min(doses, d);
+      });
+      return { drink, doses: doses === Infinity ? 0 : doses, faltam };
+    });
+  }
+
+  function renderEstoque() {
+    const estoque = Estoque.read();
+    $('#estoqueSecoes').innerHTML = LISTA_COMPRAS.map((sec) => `
+      <fieldset class="compras-secao">
+        <legend class="recipe-label">${escapeHtml(sec.secao)}</legend>
+        ${sec.itens.map((it) => {
+          const tem = estoque[it.id] !== undefined;
+          const unidade = it.fruta ? it.emb[1] : it.emb ? it.emb[1] : '';
+          return `
+          <div class="compra-item estoque-item${tem ? ' is-tem' : ''}">
+            <input type="checkbox" class="form-check-input" id="estoque-${it.id}"
+                   data-estoque="${it.id}"${tem ? ' checked' : ''}>
+            <label class="compra-info" for="estoque-${it.id}">
+              <span class="compra-nome">${escapeHtml(it.nome)}</span>
+              ${it.opcional ? '<span class="compra-drinks">opcional</span>' : ''}
+            </label>
+            ${medido(it) ? `
+              <span class="estoque-qtd">
+                <input type="number" class="form-control form-control-sm" min="0"
+                       step="${it.fruta ? 1 : 0.25}" inputmode="decimal"
+                       data-estoque-qtd="${it.id}" aria-label="Quantidade de ${escapeHtml(it.nome)}"
+                       value="${tem ? escapeHtml(estoque[it.id]) : ''}"
+                       ${tem ? '' : ' disabled'}>
+                <small>${escapeHtml(unidade)}</small>
+              </span>` : '<span class="estoque-qtd"><small>tenho / não tenho</small></span>'}
+          </div>`;
+        }).join('')}
+      </fieldset>`).join('');
+    renderPossiveis(estoque);
+  }
+
+  function renderPossiveis(estoque) {
+    const lista = drinksPossiveis(estoque);
+    const pode = lista.filter((r) => r.doses > 0).sort((a, b) => b.doses - a.doses);
+    const quase = lista.filter((r) => r.doses === 0 && r.faltam.length === 1);
+    const nomeCopo = (d) => `${GLASS_ICONS[d.copo]}${escapeHtml(GLASSES[d.copo].curto)}`;
+
+    $('#estoqueContagem').textContent = `${pode.length} de ${DRINKS.length} drinks`;
+    $('#estoqueAtalhoQtd').textContent =
+      `${pode.length} ${pode.length === 1 ? 'drink' : 'drinks'} pra fazer`;
+    $('#estoquePode').innerHTML = pode.map((r) => `
+      <li class="pode-item" style="--card-accent:${r.drink.cor[1]}">
+        <span class="pode-info">
+          <span class="pode-nome">${escapeHtml(r.drink.nome)}</span>
+          <span class="pode-copo">${nomeCopo(r.drink)}</span>
+        </span>
+        <span class="rank-qty">${r.doses}<small>${r.doses === 1 ? 'dose' : 'doses'}</small></span>
+      </li>`).join('');
+    $('#estoqueVazio').hidden = pode.length > 0;
+
+    $('#estoqueQuaseBox').hidden = quase.length === 0;
+    $('#estoqueQuase').innerHTML = quase.map((r) => `
+      <li><span>${escapeHtml(r.drink.nome)}</span><strong>falta ${escapeHtml(r.faltam[0])}</strong></li>`).join('');
+  }
+
+  function bindEstoque() {
+    const box = $('#estoqueSecoes');
+    box.addEventListener('change', (ev) => {
+      const check = ev.target.closest('[data-estoque]');
+      if (!check) return;
+      const id = check.dataset.estoque;
+      const item = itensDoCatalogo().find((i) => i.id === id);
+      const estoque = Estoque.read();
+      const input = $(`[data-estoque-qtd="${id}"]`);
+      if (check.checked) {
+        estoque[id] = medido(item) ? qtdPadrao(item) : true;
+        if (input) { input.disabled = false; input.value = estoque[id]; input.select(); }
+      } else {
+        delete estoque[id];
+        if (input) { input.disabled = true; input.value = ''; }
+      }
+      check.closest('.estoque-item').classList.toggle('is-tem', check.checked);
+      Estoque.write(estoque);
+      renderPossiveis(estoque);
+    });
+    box.addEventListener('input', (ev) => {
+      const input = ev.target.closest('[data-estoque-qtd]');
+      if (!input) return;
+      const estoque = Estoque.read();
+      const qtd = parseFloat(String(input.value).replace(',', '.'));
+      estoque[input.dataset.estoqueQtd] = Number.isFinite(qtd) && qtd > 0 ? qtd : 0;
+      Estoque.write(estoque);
+      renderPossiveis(estoque);
+    });
+    $('#estoqueAtalho').addEventListener('click', () => {
+      $('#estoqueResultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $('#estoqueLimpar').addEventListener('click', () => {
+      Estoque.write({});
+      renderEstoque();
+    });
+  }
+
+  /* ---------------------------------------------------------
      Ferramentas: exportar / importar / zerar
      --------------------------------------------------------- */
   function exportData() {
@@ -784,6 +1078,15 @@
     });
     $('#resetBtn').addEventListener('click', resetData);
 
+    // Lista de compras
+    $('#comprasSecoes').addEventListener('change', (ev) => {
+      const input = ev.target.closest('[data-compra]');
+      if (input) toggleCompra(input.dataset.compra, input.checked);
+    });
+    $('#comprasCopiar').addEventListener('click', copiarFalta);
+    $('#comprasLimpar').addEventListener('click', limparCompras);
+    bindEstoque();
+
     // Mantém o placar sincronizado entre abas abertas no mesmo dispositivo
     window.addEventListener('storage', (ev) => {
       if (ev.key !== STORAGE_KEY) return;
@@ -791,6 +1094,10 @@
       updateNavBadge();
       if (state.view === 'ranking') renderRanking();
       if (state.view === 'copos') renderGlasses();
+    });
+    window.addEventListener('storage', (ev) => {
+      if (ev.key === STORAGE_KEY_COMPRAS && state.view === 'compras') renderCompras();
+      if (ev.key === STORAGE_KEY_ESTOQUE && state.view === 'estoque') renderEstoque();
     });
   }
 

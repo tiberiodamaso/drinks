@@ -45,6 +45,12 @@
         <li class="nav-item">
           <a class="nav-link" href="#" data-view-link="copos">Meus copos</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-view-link="compras">Lista de compras</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" data-view-link="estoque">Meu bar</a>
+        </li>
       </ul>
     </div>
   </div>
@@ -204,6 +210,102 @@
   <section class="container pb-5">
     <div class="row g-4" id="glassGrid"></div>
   </section>
+</main>
+
+<!-- ============ VIEW: LISTA DE COMPRAS ============ -->
+<main id="view-compras" class="view" hidden>
+  <header class="hero hero-compact">
+    <div class="container">
+      <p class="hero-kicker">Antes da festa</p>
+      <h1 class="hero-title">Lista de compras</h1>
+      <p class="hero-sub" id="comprasSub">
+        Tudo para fazer pelo menos 3 de cada drink do cardápio.
+        Marque o que você já tem em casa — o que sobrar é o que falta comprar.
+      </p>
+    </div>
+  </header>
+
+  <section class="container pb-5">
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">O que eu já tenho</h2>
+            <span class="panel-hint" id="comprasProgresso"></span>
+          </div>
+          <div id="comprasSecoes"></div>
+          <div class="tools-bar compras-tools">
+            <button class="btn btn-outline-soft btn-sm" id="comprasLimpar">Desmarcar tudo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="panel compras-falta">
+          <div class="panel-head">
+            <h2 class="panel-title">Falta comprar</h2>
+            <span class="panel-hint" id="comprasFaltaQtd"></span>
+          </div>
+          <ul class="falta-list" id="comprasFalta"></ul>
+          <p class="falta-vazia" id="comprasTudoOk" hidden>Você já tem tudo. Bora pro bar!</p>
+          <button class="btn btn-gold w-100 mt-3" id="comprasCopiar">Copiar lista</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ VIEW: MEU BAR ============ -->
+<main id="view-estoque" class="view" hidden>
+  <header class="hero hero-compact">
+    <div class="container">
+      <p class="hero-kicker">O que tem em casa</p>
+      <h1 class="hero-title">Meu bar</h1>
+      <p class="hero-sub">
+        Marque o que você tem e quanto sobrou. Conforme você marca,
+        aparecem os drinks que dá para fazer — e quantas doses de cada.
+      </p>
+    </div>
+  </header>
+
+  <section class="container pb-5">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Tenho em casa</h2>
+            <span class="panel-hint">garrafas aceitam 0,5 · 0,25</span>
+          </div>
+          <div id="estoqueSecoes"></div>
+          <div class="tools-bar compras-tools">
+            <button class="btn btn-outline-soft btn-sm" id="estoqueLimpar">Desmarcar tudo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="panel compras-falta" id="estoqueResultado">
+          <div class="panel-head">
+            <h2 class="panel-title">Dá pra fazer</h2>
+            <span class="panel-hint" id="estoqueContagem"></span>
+          </div>
+          <ul class="rank-list" id="estoquePode"></ul>
+          <p class="falta-vazia estoque-vazio" id="estoqueVazio">
+            Marque o que você tem em casa para ver os drinks possíveis.
+          </p>
+          <div id="estoqueQuaseBox" hidden>
+            <p class="recipe-label estoque-quase-label">Falta só um ingrediente</p>
+            <ul class="falta-list" id="estoqueQuase"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Celular: o resultado fica lá embaixo, este atalho leva até ele -->
+  <button type="button" class="btn btn-gold estoque-atalho" id="estoqueAtalho">
+    <span id="estoqueAtalhoQtd">0 drinks pra fazer</span> &darr;
+  </button>
 </main>
 
 <!-- ============ GAVETA DA RECEITA (celular) ============ -->
