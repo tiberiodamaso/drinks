@@ -46,10 +46,10 @@
           <a class="nav-link" href="#" data-view-link="copos">Meus copos</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#" data-view-link="compras">Lista de compras</a>
+          <a class="nav-link" href="#" data-view-link="estoque">Meu bar</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#" data-view-link="estoque">Meu bar</a>
+          <a class="nav-link" href="#" data-view-link="preparo">Preparativos</a>
         </li>
       </ul>
     </div>
@@ -212,58 +212,15 @@
   </section>
 </main>
 
-<!-- ============ VIEW: LISTA DE COMPRAS ============ -->
-<main id="view-compras" class="view" hidden>
-  <header class="hero hero-compact">
-    <div class="container">
-      <p class="hero-kicker">Antes da festa</p>
-      <h1 class="hero-title">Lista de compras</h1>
-      <p class="hero-sub" id="comprasSub">
-        Tudo para fazer pelo menos 3 de cada drink do cardápio.
-        Marque o que você já tem em casa — o que sobrar é o que falta comprar.
-      </p>
-    </div>
-  </header>
-
-  <section class="container pb-5">
-    <div class="row g-4">
-      <div class="col-lg-7">
-        <div class="panel">
-          <div class="panel-head">
-            <h2 class="panel-title">O que eu já tenho</h2>
-            <span class="panel-hint" id="comprasProgresso"></span>
-          </div>
-          <div id="comprasSecoes"></div>
-          <div class="tools-bar compras-tools">
-            <button class="btn btn-outline-soft btn-sm" id="comprasLimpar">Desmarcar tudo</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-5">
-        <div class="panel compras-falta">
-          <div class="panel-head">
-            <h2 class="panel-title">Falta comprar</h2>
-            <span class="panel-hint" id="comprasFaltaQtd"></span>
-          </div>
-          <ul class="falta-list" id="comprasFalta"></ul>
-          <p class="falta-vazia" id="comprasTudoOk" hidden>Você já tem tudo. Bora pro bar!</p>
-          <button class="btn btn-gold w-100 mt-3" id="comprasCopiar">Copiar lista</button>
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
-
 <!-- ============ VIEW: MEU BAR ============ -->
 <main id="view-estoque" class="view" hidden>
   <header class="hero hero-compact">
     <div class="container">
       <p class="hero-kicker">O que tem em casa</p>
       <h1 class="hero-title">Meu bar</h1>
-      <p class="hero-sub">
-        Marque o que você tem e quanto sobrou. Conforme você marca,
-        aparecem os drinks que dá para fazer — e quantas doses de cada.
+      <p class="hero-sub" id="estoqueSub">
+        Marque o que você tem e quanto sobrou. A lista de compras
+        mostra o que falta para fazer pelo menos 2 de cada drink do cardápio.
       </p>
     </div>
   </header>
@@ -274,7 +231,7 @@
         <div class="panel">
           <div class="panel-head">
             <h2 class="panel-title">Tenho em casa</h2>
-            <span class="panel-hint">garrafas aceitam 0,5 · 0,25</span>
+            <span class="panel-hint">garrafas aceitam ¼ · ⅓ · ½ · ⅔ · ¾</span>
           </div>
           <div id="estoqueSecoes"></div>
           <div class="tools-bar compras-tools">
@@ -283,8 +240,18 @@
         </div>
       </div>
 
-      <div class="col-lg-6">
-        <div class="panel compras-falta" id="estoqueResultado">
+      <div class="col-lg-6" id="estoqueResultado">
+        <div class="panel mb-4">
+          <div class="panel-head">
+            <h2 class="panel-title">Lista de compras</h2>
+            <span class="panel-hint" id="comprasFaltaQtd"></span>
+          </div>
+          <ul class="falta-list" id="comprasFalta"></ul>
+          <p class="falta-vazia" id="comprasTudoOk" hidden>Você já tem tudo. Bora pro bar!</p>
+          <button class="btn btn-gold w-100 mt-3" id="comprasCopiar">Copiar lista</button>
+        </div>
+
+        <div class="panel">
           <div class="panel-head">
             <h2 class="panel-title">Dá pra fazer</h2>
             <span class="panel-hint" id="estoqueContagem"></span>
@@ -304,8 +271,48 @@
 
   <!-- Celular: o resultado fica lá embaixo, este atalho leva até ele -->
   <button type="button" class="btn btn-gold estoque-atalho" id="estoqueAtalho">
-    <span id="estoqueAtalhoQtd">0 drinks pra fazer</span> &darr;
+    <span id="estoqueAtalhoQtd">Lista de compras</span> &darr;
   </button>
+</main>
+
+<!-- ============ VIEW: PREPARATIVOS ============ -->
+<main id="view-preparo" class="view" hidden>
+  <header class="hero hero-compact">
+    <div class="container">
+      <p class="hero-kicker">Antes de abrir o bar</p>
+      <h1 class="hero-title">Preparativos</h1>
+      <p class="hero-sub" id="preparoSub">
+        O que deixar pronto para fazer 2 de cada drink sem começar do zero a cada pedido.
+      </p>
+    </div>
+  </header>
+
+  <section class="container pb-5">
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Deixar pronto</h2>
+            <span class="panel-hint" id="preparoProgresso"></span>
+          </div>
+          <div id="preparoEtapas"></div>
+          <div class="tools-bar compras-tools">
+            <button class="btn btn-outline-soft btn-sm" id="preparoLimpar">Recomeçar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Na hora do pedido</h2>
+            <span class="panel-hint">o que pegar já pronto</span>
+          </div>
+          <ul class="naHora-list" id="preparoNaHora"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <!-- ============ GAVETA DA RECEITA (celular) ============ -->

@@ -641,7 +641,7 @@ const DRINKS = [
    fruta    em "Meu bar", o estoque é contado em frutas, não em embalagens.
    opcional em "Meu bar", a falta dele não impede o drink.
    ========================================================= */
-const DOSES_POR_DRINK = 3;
+const DOSES_POR_DRINK = 2;
 
 const LISTA_COMPRAS = [
   {
@@ -698,6 +698,164 @@ const LISTA_COMPRAS = [
       { id: 'acucar', nome: 'Açúcar', busca: /açúcar/i, qtd: '1 pacote pequeno' },
       { id: 'sal-grosso', nome: 'Sal grosso', busca: /\bsal\b/i, qtd: '1 pacote' },
       { id: 'gelo', nome: 'Gelo em cubos', busca: /gelo/i, qtd: '4 sacos de 5 kg', nota: 'reserve 1 saco para triturar' }
+    ]
+  }
+];
+
+/* =========================================================
+   PREPARATIVOS
+   O que dá para deixar pronto antes de abrir o bar, para
+   DOSES_POR_DRINK de cada drink.
+
+   usos     { "<drink-id>": unidades por dose } — a quantidade é a
+            soma vezes DOSES_POR_DRINK; `un` dá singular/plural.
+   busca    regex nas linhas "NN ml de ..." dos ingredientes (ml).
+   rende    com `busca`: ml por embalagem/fruta, mostrado junto (`emb`).
+   lote     id de um drink: soma todos os ml da receita (pré-mistura).
+   drinks   ids dos drinks que usam, quando não há quantidade (utensílios).
+   fixo     quantidade em texto, quando não dá para calcular.
+   curto    como o item aparece em "Na hora do pedido".
+   opcional só se tiver / se o convidado quiser.
+   ========================================================= */
+const TODOS_OS_DRINKS = '*';
+
+const PREPARATIVOS = [
+  {
+    etapa: 'Na véspera',
+    itens: [
+      { id: 'lote-dry-martini', nome: 'Pré-mistura de Dry Martini', lote: 'dry-martini', curto: 'pré-mistura',
+        como: 'Gin e Extra Dry numa garrafinha, direto no congelador. Na hora é só mexer 15 s com gelo e coar.' },
+      { id: 'lote-tequini', nome: 'Pré-mistura de Tequini', lote: 'tequini', curto: 'pré-mistura',
+        como: 'Tequila e Extra Dry numa garrafinha no congelador. Mexa com gelo e coe.' },
+      { id: 'lote-el-presidente', nome: 'Pré-mistura de El Presidente', lote: 'el-presidente', curto: 'pré-mistura',
+        como: 'Rum, Extra Dry, triple sec e as gotas de grenadine numa garrafinha no congelador.' },
+      { id: 'gelar-tonica', nome: 'Água tônica na geladeira', busca: /ml de água tônica/i, rende: 350,
+        emb: ['lata', 'latas'], curto: 'tônica gelada',
+        como: 'Tônica quente derrete o gelo e perde o gás. Gele todas de véspera.' },
+      { id: 'gelar-agua-gas', nome: 'Água com gás na geladeira', busca: /ml de água com gás|água com gás para completar/i,
+        extraMl: { mojito: 100 }, rende: 1500, emb: ['garrafa de 1,5 L', 'garrafas de 1,5 L'], curto: 'água com gás gelada',
+        como: 'Bem gelada, fechada até a hora de usar.' },
+      { id: 'gelar-vermutes', nome: 'Vermutes na geladeira', fixo: 'Extra Dry e Rosso',
+        como: 'Vermute aberto oxida fora da geladeira, e frio ele já entra no drink na temperatura certa.' },
+      { id: 'gelo-triturado', nome: 'Gelo triturado', usos: { mojito: 1, caipirissima: 1 }, un: ['copo', 'copos'],
+        curto: 'gelo triturado',
+        como: 'Triture num pano de prato com um rolo (ou no liquidificador) e guarde num pote no freezer. Solte com um garfo antes de usar.' },
+      { id: 'sal-moido', nome: 'Sal grosso moído', fixo: 'um pratinho',
+        como: 'Moa o sal grosso até ficar como areia, para grudar bem na borda.' }
+    ]
+  },
+  {
+    etapa: 'Duas horas antes',
+    itens: [
+      { id: 'suco-limao', nome: 'Suco de limão taiti', busca: /ml de suco de limão taiti/i, rende: 30,
+        emb: ['limão', 'limões'], curto: 'suco de limão',
+        como: 'Esprema, coe e guarde numa garrafinha na geladeira. Fica bom por umas 4 horas.' },
+      { id: 'suco-laranja', nome: 'Suco de laranja', busca: /ml de suco de laranja/i, rende: 120,
+        emb: ['laranja', 'laranjas'], curto: 'suco de laranja',
+        como: 'Espremido na hora e coado, numa garrafinha na geladeira.' },
+      { id: 'twist-siciliano', nome: 'Twists de limão siciliano', un: ['twist', 'twists'], curto: 'twist de siciliano',
+        usos: { 'dry-martini': 1, 'white-lady': 1, tequini: 1, 'gin-tonica-classica': 1, 'highball-ballantines': 1, 'peach-fizz-seco': 1 },
+        como: 'Com o descascador, tire tiras largas só da parte amarela, sem o branco. Guarde entre papel-toalha úmido, na geladeira. Na hora, torça sobre o drink.' },
+      { id: 'casca-laranja', nome: 'Cascas de laranja', un: ['casca', 'cascas'], curto: 'casca de laranja',
+        usos: { 'el-presidente': 1 },
+        como: 'Mesma técnica do twist: só a parte laranja, sem o branco.' },
+      { id: 'rodela-limao', nome: 'Rodelas de limão taiti', un: ['rodela', 'rodelas'], curto: 'rodela de limão',
+        usos: { 'margarita-classica': 1, 'blue-margarita': 1, 'blue-ocean-tonic': 1, 'blue-lagoon-seco': 1 },
+        como: 'Rodelas finas com um corte até o meio, para encaixar na borda. Pote fechado na geladeira.' },
+      { id: 'gomo-limao', nome: 'Gomos de limão taiti', un: ['gomo', 'gomos'], curto: 'gomo de limão',
+        usos: { paloma: 1, caipirissima: 1 },
+        como: 'Para enfeitar a borda da Paloma e da Caipiríssima.' },
+      { id: 'limao-caipirissima', nome: 'Limões da Caipiríssima em gomos', un: ['limão', 'limões'], curto: 'limão em gomos',
+        usos: { caipirissima: 1 },
+        como: 'Cada limão em 8 gomos, sem o miolo branco (é ele que amarga). Pote fechado; na hora é só macerar com o açúcar.' },
+      { id: 'meia-rodela-laranja', nome: 'Meias rodelas de laranja', un: ['meia rodela', 'meias rodelas'], curto: 'meia rodela de laranja',
+        usos: { 'rosso-tonic': 1, 'tequila-sunrise': 1 },
+        como: 'Rodelas grossas cortadas ao meio.' },
+      { id: 'gomo-tangerina', nome: 'Gomos de tangerina (ou laranja)', un: ['gomo', 'gomos'], curto: 'gomos de tangerina',
+        usos: { 'margarita-tangerina': 1, 'tangerina-cooler': 2 },
+        como: 'Descasque e separe os gomos. Pote fechado na geladeira.' },
+      { id: 'sal-raspas', nome: 'Sal com raspas de laranja', fixo: 'um pratinho', curto: 'sal com raspas',
+        usos: { 'margarita-tangerina': 1 },
+        como: 'Sal moído com raspas finas de uma laranja. Feito cedo demais, as raspas secam.' },
+      { id: 'hortela-folhas', nome: 'Folhas de hortelã para macerar', un: ['folha', 'folhas'], curto: 'folhas de hortelã',
+        usos: { 'hortela-martini': 8, mojito: 10, 'gt-framboesa-hortela': 12 },
+        como: 'Destaque as folhas boas e guarde num pote com papel-toalha úmido, na geladeira.' },
+      { id: 'hortela-raminhos', nome: 'Raminhos de hortelã para decorar', un: ['raminho', 'raminhos'], curto: 'raminho de hortelã',
+        usos: { 'hortela-martini': 1, mojito: 1, 'gt-framboesa-hortela': 1, 'peach-fizz-seco': 1, 'tangerina-cooler': 1 },
+        como: 'Pontas bonitas num copo com água, como um buquê, na geladeira. Bata na palma da mão antes de usar, para soltar o aroma.' },
+      { id: 'alecrim', nome: 'Raminhos de alecrim', un: ['raminho', 'raminhos'], curto: 'alecrim', opcional: true,
+        usos: { 'gt-maca-verde': 1, 'blue-ocean-tonic': 1 },
+        como: 'Pontas de uns 10 cm, num copo com água.' },
+      { id: 'zimbro', nome: 'Bagas de zimbro', un: ['baga', 'bagas'], curto: 'zimbro', opcional: true,
+        usos: { 'gin-tonica-classica': 4 },
+        como: 'Num potinho perto das taças de gin.' }
+    ]
+  },
+  {
+    etapa: 'Uma hora antes',
+    itens: [
+      { id: 'maca-fatias', nome: 'Fatias finas de maçã verde', un: ['fatia', 'fatias'], curto: 'fatias de maçã',
+        usos: { 'gt-maca-verde': 4, 'old-parr-apple': 3 },
+        como: 'Fatias bem finas, sem sementes, num pote com água gelada e um pouco de limão, para não escurecer.' },
+      { id: 'bordas-sal', nome: 'Bordas de sal já feitas', un: ['taça', 'taças'], curto: 'taça com borda de sal',
+        usos: { 'margarita-classica': 1, 'blue-margarita': 1, 'margarita-tangerina': 1, paloma: 1 },
+        como: 'Passe um gomo de limão em metade da borda e encoste no sal (na Margarita de Tangerina, no sal com raspas). Deixe secar de boca para cima.' },
+      { id: 'azeitonas', nome: 'Azeitonas no palito', un: ['palito', 'palitos'], curto: 'azeitona', opcional: true,
+        usos: { 'dry-martini': 1 },
+        como: 'Para quem pedir o Dry Martini salgado. Uma ou duas azeitonas verdes por palito.' },
+      { id: 'cerejas', nome: 'Cerejas no palito', un: ['palito', 'palitos'], curto: 'cereja', opcional: true,
+        usos: { 'blue-lagoon-seco': 1 },
+        como: 'Cereja em calda, escorrida.' }
+    ]
+  },
+  {
+    etapa: 'Meia hora antes',
+    itens: [
+      { id: 'tacas-martini', nome: 'Taças Martini no congelador', un: ['taça', 'taças'], curto: 'taça gelada',
+        usos: { 'dry-martini': 1, 'white-lady': 1, tequini: 1, 'el-presidente': 1, 'hortela-martini': 1 },
+        como: 'Deixe as que couberem no congelador e ponha uma nova no lugar de cada uma que sair.' },
+      { id: 'balde-gelo', nome: 'Balde de gelo cheio', fixo: 'reposição no freezer', curto: 'gelo',
+        drinks: TODOS_OS_DRINKS,
+        como: 'Balde com pegador perto das taças, e o resto do gelo no freezer ou numa caixa térmica.' },
+      { id: 'acucar', nome: 'Açúcar num potinho', fixo: 'com colher de chá', curto: 'açúcar',
+        usos: { mojito: 1, caipirissima: 1 },
+        como: 'Para macerar o Mojito e a Caipiríssima.' },
+      { id: 'garrafas-abertas', nome: 'Garrafas na bancada', fixo: 'destilados e licores',
+        como: 'Todas em fila, com rótulo para a frente, na ordem de uso. Os xaropes juntos.' }
+    ]
+  },
+  {
+    etapa: 'Estação de trabalho',
+    utensilios: true,
+    itens: [
+      { id: 'u-dosador', nome: 'Dosador (jigger)', drinks: TODOS_OS_DRINKS,
+        como: 'Todas as receitas são em ml. Um de 30/50 ml resolve.' },
+      { id: 'u-coqueteleira', nome: 'Coqueteleira com coador', curto: 'coqueteleira',
+        drinks: ['white-lady', 'hortela-martini', 'margarita-classica', 'blue-margarita', 'margarita-tangerina', 'blue-lagoon-seco', 'peach-fizz-seco'],
+        como: 'Enxágue entre um drink e outro.' },
+      { id: 'u-peneira', nome: 'Peneira fina', curto: 'peneira fina',
+        drinks: ['white-lady', 'hortela-martini'],
+        como: 'Para a coada dupla: segura lascas de gelo e folhas.' },
+      { id: 'u-mixing', nome: 'Mixing glass (ou copo alto)', curto: 'mixing glass',
+        drinks: ['dry-martini', 'tequini', 'el-presidente'],
+        como: 'Para os drinks mexidos, que não vão na coqueteleira.' },
+      { id: 'u-bailarina', nome: 'Colher bailarina (colher longa)', curto: 'colher bailarina',
+        drinks: ['dry-martini', 'tequini', 'el-presidente', 'gin-tonica-classica', 'gt-maca-verde', 'gt-framboesa-hortela',
+          'rosso-tonic', 'blue-ocean-tonic', 'mojito', 'paloma', 'highball-ballantines', 'old-parr-apple', 'caipirissima', 'tequila-sunrise', 'tangerina-cooler'],
+        como: 'Para mexer e para escorrer a tônica sem perder o gás.' },
+      { id: 'u-socador', nome: 'Socador (pilão)', curto: 'socador',
+        drinks: ['mojito', 'caipirissima'],
+        como: 'Pressione, sem esmagar: casca e hortelã amassadas amargam.' },
+      { id: 'u-pratinhos', nome: 'Pratinhos rasos para o sal', fixo: '2',
+        como: 'Um com sal grosso moído, outro com sal e raspas de laranja.' },
+      { id: 'u-faca', nome: 'Faquinha, tábua e descascador', fixo: 'para os preparativos',
+        como: 'Deixe à mão para repor guarnição durante a festa.' },
+      { id: 'u-palitos', nome: 'Palitos e canudos', fixo: 'um punhado',
+        como: 'Palitos para azeitona e cereja; canudos para os drinks de copo rocks e taça tropical.' },
+      { id: 'u-pano', nome: 'Pano de bar e guardanapos',
+        como: 'Para secar a bancada e servir o drink sem pingar.' },
+      { id: 'u-lixo', nome: 'Pote para descarte', fixo: '1',
+        como: 'Cascas, gelo usado e gomos espremidos vão direto nele.' }
     ]
   }
 ];

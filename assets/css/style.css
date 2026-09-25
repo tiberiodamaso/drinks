@@ -815,22 +815,8 @@ ol.recipe-list li::before {
 .compra-nome { font-size: .96rem; font-weight: 500; color: var(--ink); }
 .compra-drinks { font-size: .73rem; color: var(--ink-dim); line-height: 1.45; }
 
-.compra-qtd {
-  flex: 0 0 auto;
-  max-width: 45%;
-  text-align: right;
-  font-size: .86rem;
-  font-weight: 600;
-  color: var(--brand);
-}
-.compra-qtd small { display: block; font-size: .68rem; font-weight: 500; color: var(--ink-dim); }
-
-.compra-item.is-tenho .compra-nome { color: var(--ink-dim); text-decoration: line-through; }
-.compra-item.is-tenho .compra-qtd { color: var(--ink-dim); }
-
 .compras-tools { margin-top: .6rem; }
 
-.compras-falta { position: sticky; top: 90px; }
 .falta-list { list-style: none; padding: 0; margin: 0; }
 .falta-list li {
   display: flex;
@@ -841,17 +827,15 @@ ol.recipe-list li::before {
   font-size: .9rem;
 }
 .falta-list li:last-child { border-bottom: none; }
-.falta-list strong { color: var(--brand); font-weight: 600; text-align: right; }
+.falta-list strong { color: var(--brand); font-weight: 600; text-align: right; white-space: nowrap; }
+.falta-list li small { display: block; font-size: .72rem; color: var(--ink-dim); }
+.falta-list li.falta-secao { border-bottom: none; padding: .9rem 0 0; }
+.falta-list li.falta-secao:first-child { padding-top: 0; }
+.falta-list li.falta-secao .recipe-label { margin: 0; }
 .falta-vazia { color: var(--mint); font-weight: 600; text-align: center; margin: .5rem 0 0; }
 
-@media (max-width: 991.98px) {
-  .compras-falta { position: static; }
-}
 @media (max-width: 575.98px) {
   /* no celular a quantidade desce para baixo do nome, sem espremer o texto */
-  .compra-item { flex-wrap: wrap; row-gap: .15rem; }
-  .compra-qtd { flex-basis: 100%; max-width: none; text-align: left; padding-left: 2.15rem; }
-  .compra-qtd small { display: inline; margin-left: .35rem; }
   .estoque-item { flex-wrap: wrap; row-gap: .35rem; }
   .estoque-item .compra-info { flex-basis: calc(100% - 2.2rem); }
   .estoque-item:not(.is-tem) .estoque-qtd { display: none; }
@@ -872,11 +856,19 @@ ol.recipe-list li::before {
 }
 .estoque-qtd small { font-size: .72rem; min-width: 5.4rem; }
 .estoque-qtd .form-control {
-  width: 4.6rem;
+  width: 3.8rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
   border-color: var(--line-2);
 }
+.estoque-qtd .form-select {
+  width: 4.4rem;
+  padding-right: 1.6rem;
+  background-position: right .4rem center;
+  border-color: var(--line-2);
+}
+.estoque-qtd .form-select:disabled { background-color: var(--surface-2); opacity: .6; }
+.estoque-qtd .form-select:focus,
 .estoque-qtd .form-control:focus { border-color: var(--brand-bright); box-shadow: 0 0 0 .2rem var(--brand-tint); }
 .estoque-qtd .form-control:disabled { background: var(--surface-2); opacity: .6; }
 
@@ -905,6 +897,55 @@ ol.recipe-list li::before {
   }
 }
 .estoque-quase-label { margin-top: 1.4rem; }
+
+/* ---------------- Preparativos ---------------- */
+.preparo-item { align-items: flex-start; }
+.preparo-item .form-check-input { margin-top: .15rem; }
+.preparo-item .compra-drinks { margin-top: .15rem; }
+.preparo-qtd {
+  flex: 0 0 auto;
+  max-width: 40%;
+  text-align: right;
+  font-size: .86rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+.preparo-qtd small { display: block; font-size: .7rem; font-weight: 500; color: var(--ink-dim); }
+.preparo-opcional {
+  font-size: .66rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-left: .3rem;
+}
+.preparo-item.is-feito .compra-nome { color: var(--ink-dim); text-decoration: line-through; }
+.preparo-item.is-feito .compra-drinks,
+.preparo-item.is-feito .preparo-qtd { opacity: .55; }
+
+.naHora-list { list-style: none; padding: 0; margin: 0; }
+.naHora-item { padding: .75rem 0 .75rem .8rem; border-bottom: 1px solid var(--line); border-left: 3px solid var(--card-accent); }
+.naHora-item:last-child { border-bottom: none; }
+.naHora-nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .2rem .6rem;
+  margin: 0 0 .4rem;
+  font-size: .96rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.naHora-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.naHora-chips .tag-utensilio { background: transparent; border-style: dashed; }
+.naHora-deco { margin: .45rem 0 0; font-size: .74rem; color: var(--ink-dim); }
+
+@media (max-width: 575.98px) {
+  .preparo-item { flex-wrap: wrap; row-gap: .2rem; }
+  .preparo-qtd { flex-basis: 100%; max-width: none; text-align: left; padding-left: 2.15rem; }
+  .preparo-qtd small { display: inline; margin-left: .35rem; }
+}
 
 /* ---------------- View transitions ---------------- */
 .view { animation: fadeUp .36s ease both; }

@@ -6,8 +6,8 @@
 
   const STORAGE_KEY = 'bar-do-tibs:pedidos:v1';
   const STORAGE_KEY_LEGADO = 'bar-da-casa:pedidos:v1';
-  const STORAGE_KEY_COMPRAS = 'bar-do-tibs:compras:v1';
   const STORAGE_KEY_ESTOQUE = 'bar-do-tibs:estoque:v1';
+  const STORAGE_KEY_PREPARO = 'bar-do-tibs:preparativos:v1';
 
   // A contagem segue sendo gravada, mas fica fora da tela enquanto cada
   // aparelho tem o seu placar. Religar junto com o menu "Mais pedidos".
@@ -145,7 +145,7 @@
      --------------------------------------------------------- */
   function showView(name) {
     state.view = name;
-    ['cardapio', 'ranking', 'copos', 'compras', 'estoque'].forEach((v) => {
+    ['cardapio', 'ranking', 'copos', 'estoque', 'preparo'].forEach((v) => {
       const el = document.getElementById('view-' + v);
       if (el) el.hidden = v !== name;
     });
@@ -155,8 +155,8 @@
 
     if (name === 'ranking') renderRanking();
     if (name === 'copos') renderGlasses();
-    if (name === 'compras') renderCompras();
     if (name === 'estoque') renderEstoque();
+    if (name === 'preparo') renderPreparo();
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -659,20 +659,22 @@
   }
 
   /* ---------------------------------------------------------
-     Lista de compras
-     Marcado = "já tenho". O que fica desmarcado vai para "Falta comprar".
+     Meu bar: o que tenho em casa -> quais drinks dá para fazer
+     e o que falta comprar para DOSES_POR_DRINK de cada.
+     Estoque: { "<item-id>": quantidade } — em embalagens (garrafas,
+     latas, aceitando frações) ou em frutas; itens sem medida guardam só `true`.
      --------------------------------------------------------- */
-  const Tenho = {
+  const Estoque = {
     read() {
       try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_COMPRAS) || '[]');
-        return new Set(Array.isArray(data) ? data : []);
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_ESTOQUE) || '{}');
+        return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
       } catch (err) {
-        return new Set();
+        return {};
       }
     },
-    write(set) {
-      try { localStorage.setItem(STORAGE_KEY_COMPRAS, JSON.stringify([...set])); } catch (err) { /* ignorado */ }
+    write(data) {
+      try { localStorage.setItem(STORAGE_KEY_ESTOQUE, JSON.stringify(data)); } catch (err) { /* ignorado */ }
     }
   };
 
@@ -694,142 +696,27 @@
 
   const itensDoCatalogo = () => LISTA_COMPRAS.reduce((acc, sec) => acc.concat(sec.itens), []);
 
-  // Soma o que cada item pede em todas as receitas, vezes DOSES_POR_DRINK
-  function calcularItem(item) {
-    const drinks = [];
-    let ml = 0;
-    let un = 0;
-    DRINKS.forEach((drink) => {
-      const nec = necessidadePorDose(item, drink);
-      if (!nec) return;
-      drinks.push(drink.nome);
-      ml += nec.ml;
-      un += nec.un;
-    });
-    ml *= DOSES_POR_DRINK;
-    un *= DOSES_POR_DRINK;
-
-    let qtd = item.qtd;
-    let detalhe = item.nota || '';
-    if (!qtd) {
-      const n = Math.max(1, Math.ceil(ml / item.rende + un));
-      qtd = `${n} ${item.emb[n === 1 ? 0 : 1]}`;
-      // bebidas mostram o volume total; frutas mostram a nota de rendimento
-      if (!item.nota) detalhe = `${fmtNum(ml)} ml no total`;
-    }
-    return { qtd, detalhe, drinks };
-  }
-
-  function comprasCalculadas() {
-    return LISTA_COMPRAS.map((sec) => ({
-      secao: sec.secao,
-      itens: sec.itens.map((item) => Object.assign({ id: item.id, nome: item.nome }, calcularItem(item)))
-    }));
-  }
-
-  function renderCompras() {
-    const tenho = Tenho.read();
-    const secoes = comprasCalculadas();
-
-    $('#comprasSub').innerHTML = `Tudo para fazer pelo menos ${DOSES_POR_DRINK} de cada um dos
-      ${DRINKS.length} drinks do cardápio. Marque o que você já tem em casa —
-      o que ficar desmarcado é o que falta comprar.`;
-
-    $('#comprasSecoes').innerHTML = secoes.map((sec) => `
-      <fieldset class="compras-secao">
-        <legend class="recipe-label">${escapeHtml(sec.secao)}</legend>
-        ${sec.itens.map((it) => `
-          <label class="compra-item${tenho.has(it.id) ? ' is-tenho' : ''}">
-            <input type="checkbox" class="form-check-input" data-compra="${it.id}"${tenho.has(it.id) ? ' checked' : ''}>
-            <span class="compra-info">
-              <span class="compra-nome">${escapeHtml(it.nome)}</span>
-              <span class="compra-drinks">${it.drinks.length > 6
-                ? `Usado em ${it.drinks.length} drinks`
-                : escapeHtml(it.drinks.join(', '))}</span>
-            </span>
-            <span class="compra-qtd">${escapeHtml(it.qtd)}
-              ${it.detalhe ? `<small>${escapeHtml(it.detalhe)}</small>` : ''}</span>
-          </label>`).join('')}
-      </fieldset>`).join('');
-
-    renderFalta(secoes, tenho);
-  }
-
-  function renderFalta(secoes, tenho) {
-    const todos = secoes.reduce((acc, sec) => acc.concat(sec.itens), []);
-    const falta = todos.filter((it) => !tenho.has(it.id));
-
-    $('#comprasProgresso').textContent = `${todos.length - falta.length} de ${todos.length} em casa`;
-    $('#comprasFaltaQtd').textContent = falta.length
-      ? `${falta.length} ${falta.length === 1 ? 'item' : 'itens'}` : '';
-    $('#comprasFalta').innerHTML = falta.map((it) => `
-      <li><span>${escapeHtml(it.nome)}</span><strong>${escapeHtml(it.qtd)}</strong></li>`).join('');
-    $('#comprasTudoOk').hidden = falta.length > 0;
-    $('#comprasCopiar').hidden = falta.length === 0;
-  }
-
-  function toggleCompra(id, marcado) {
-    const tenho = Tenho.read();
-    if (marcado) tenho.add(id); else tenho.delete(id);
-    Tenho.write(tenho);
-    const input = $(`[data-compra="${id}"]`);
-    if (input) input.closest('.compra-item').classList.toggle('is-tenho', marcado);
-    renderFalta(comprasCalculadas(), tenho);
-  }
-
-  function textoFalta() {
-    const tenho = Tenho.read();
-    const linhas = comprasCalculadas()
-      .map((sec) => {
-        const itens = sec.itens.filter((it) => !tenho.has(it.id));
-        if (!itens.length) return '';
-        return `*${sec.secao}*\n` + itens.map((it) => `- ${it.nome}: ${it.qtd}`).join('\n');
-      })
-      .filter(Boolean);
-    return `Lista de compras · Bar do Tibs\n\n${linhas.join('\n\n')}`;
-  }
-
-  async function copiarFalta() {
-    const texto = textoFalta();
-    try {
-      await navigator.clipboard.writeText(texto);
-      showToast('Lista copiada! É só colar no WhatsApp ou nas notas.');
-    } catch (err) {
-      // Sem permissão de área de transferência (ex.: http): usa o compartilhar do sistema
-      if (navigator.share) {
-        navigator.share({ text: texto }).catch(() => {});
-      } else {
-        showToast('Não consegui copiar automaticamente neste navegador.');
-      }
-    }
-  }
-
-  function limparCompras() {
-    Tenho.write(new Set());
-    renderCompras();
-  }
-
-  /* ---------------------------------------------------------
-     Meu bar: o que tenho em casa -> quais drinks dá para fazer
-     Estoque: { "<item-id>": quantidade } — em embalagens (garrafas,
-     latas) ou em frutas; itens sem medida guardam só `true`.
-     --------------------------------------------------------- */
-  const Estoque = {
-    read() {
-      try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_ESTOQUE) || '{}');
-        return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
-      } catch (err) {
-        return {};
-      }
-    },
-    write(data) {
-      try { localStorage.setItem(STORAGE_KEY_ESTOQUE, JSON.stringify(data)); } catch (err) { /* ignorado */ }
-    }
-  };
-
   const medido = (item) => !item.qtd; // tem rende/emb: dá para contar quantidade
   const qtdPadrao = (item) => (item.fruta ? 10 : 1);
+
+  // Frações de garrafa aceitas no estoque (o valor do <select> é o índice)
+  const FRACOES = [[0, '+ 0'], [1 / 4, '+ ¼'], [1 / 3, '+ ⅓'], [1 / 2, '+ ½'], [2 / 3, '+ ⅔'], [3 / 4, '+ ¾']];
+
+  // 1.5 -> { inteiro: 1, fracao: 3 (½) }
+  function separarGarrafas(valor) {
+    const v = Number(valor) || 0;
+    const inteiro = Math.floor(v + 0.01);
+    const resto = v - inteiro;
+    let fracao = 0;
+    FRACOES.forEach(([f], i) => {
+      if (Math.abs(f - resto) < Math.abs(FRACOES[fracao][0] - resto)) fracao = i;
+    });
+    return { inteiro, fracao };
+  }
+
+  // Unidades (frutas) ou ml (bebidas) que uma dose pede e que o estoque tem
+  const porDoseDe = (item, nec) => (item.fruta ? nec.ml / item.rende + nec.un : nec.ml);
+  const disponivelDe = (item, tem) => (item.fruta ? Number(tem) || 0 : (Number(tem) || 0) * item.rende);
 
   // Quantas doses de cada drink o estoque permite, e o que falta
   function drinksPossiveis(estoque) {
@@ -843,11 +730,9 @@
         const tem = estoque[item.id];
         if (tem === undefined) { faltam.push(item.nome); doses = 0; return; }
         if (!medido(item)) return;
-        // frutas: suco convertido em unidades + gomos/rodelas; bebidas: ml
-        const porDose = item.fruta ? nec.ml / item.rende + nec.un : nec.ml;
-        const disponivel = item.fruta ? Number(tem) : Number(tem) * item.rende;
+        const porDose = porDoseDe(item, nec);
         if (porDose <= 0) return;
-        const d = Math.floor(disponivel / porDose + 1e-9);
+        const d = Math.floor(disponivelDe(item, tem) / porDose + 1e-9);
         if (d < 1) faltam.push(`${item.nome} (acabou)`);
         doses = Math.min(doses, d);
       });
@@ -855,14 +740,76 @@
     });
   }
 
+  // O que comprar para fazer DOSES_POR_DRINK de cada drink, descontando o estoque
+  function listaDeCompras(estoque) {
+    return LISTA_COMPRAS.map((sec) => ({
+      secao: sec.secao,
+      itens: sec.itens.map((item) => {
+        if (item.opcional) return null;
+        let precisa = 0;
+        let usado = false;
+        DRINKS.forEach((drink) => {
+          const nec = necessidadePorDose(item, drink);
+          if (!nec) return;
+          usado = true;
+          precisa += porDoseDe(item, nec) * DOSES_POR_DRINK;
+        });
+        if (!usado) return null;
+        const tem = estoque[item.id];
+
+        if (!medido(item)) {
+          return tem === undefined ? { nome: item.nome, qtd: item.qtd, detalhe: item.nota || '' } : null;
+        }
+
+        const falta = precisa - (tem === undefined ? 0 : disponivelDe(item, tem));
+        if (falta <= 1e-6) return null;
+        const n = Math.max(1, Math.ceil((item.fruta ? falta : falta / item.rende) - 1e-6));
+        return {
+          nome: item.nome,
+          qtd: `${n} ${item.emb[n === 1 ? 0 : 1]}`,
+          detalhe: item.fruta ? '' : `faltam ${fmtNum(Math.ceil(falta))} ml`
+        };
+      }).filter(Boolean)
+    })).filter((sec) => sec.itens.length);
+  }
+
+  function controleQtd(it, tem, valor) {
+    const off = tem ? '' : ' disabled';
+    const rotulo = `Quantidade de ${escapeHtml(it.nome)}`;
+    // frutas e latas contam só inteiros; garrafas aceitam frações
+    if (it.fruta || /^lata/.test(it.emb[0])) {
+      return `
+        <span class="estoque-qtd">
+          <input type="number" class="form-control form-control-sm" min="0" step="1" inputmode="numeric"
+                 data-estoque-int="${it.id}" aria-label="${rotulo}"
+                 value="${tem ? escapeHtml(Math.round(Number(valor) || 0)) : ''}"${off}>
+          <small>${escapeHtml(it.emb[1])}</small>
+        </span>`;
+    }
+    const { inteiro, fracao } = separarGarrafas(valor);
+    return `
+      <span class="estoque-qtd">
+        <input type="number" class="form-control form-control-sm" min="0" step="1" inputmode="numeric"
+               data-estoque-int="${it.id}" aria-label="${rotulo} (inteiras)"
+               value="${tem ? inteiro : ''}"${off}>
+        <select class="form-select form-select-sm" data-estoque-frac="${it.id}"
+                aria-label="${rotulo} (fração)"${off}>
+          ${FRACOES.map(([, txt], i) =>
+            `<option value="${i}"${tem && i === fracao ? ' selected' : ''}>${txt}</option>`).join('')}
+        </select>
+        <small>${escapeHtml(it.emb[1])}</small>
+      </span>`;
+  }
+
   function renderEstoque() {
     const estoque = Estoque.read();
+    $('#estoqueSub').textContent = `Marque o que você tem e quanto sobrou. A lista de compras
+      mostra o que falta para fazer pelo menos ${DOSES_POR_DRINK} de cada drink do cardápio.`;
     $('#estoqueSecoes').innerHTML = LISTA_COMPRAS.map((sec) => `
       <fieldset class="compras-secao">
         <legend class="recipe-label">${escapeHtml(sec.secao)}</legend>
         ${sec.itens.map((it) => {
           const tem = estoque[it.id] !== undefined;
-          const unidade = it.fruta ? it.emb[1] : it.emb ? it.emb[1] : '';
           return `
           <div class="compra-item estoque-item${tem ? ' is-tem' : ''}">
             <input type="checkbox" class="form-check-input" id="estoque-${it.id}"
@@ -871,19 +818,35 @@
               <span class="compra-nome">${escapeHtml(it.nome)}</span>
               ${it.opcional ? '<span class="compra-drinks">opcional</span>' : ''}
             </label>
-            ${medido(it) ? `
-              <span class="estoque-qtd">
-                <input type="number" class="form-control form-control-sm" min="0"
-                       step="${it.fruta ? 1 : 0.25}" inputmode="decimal"
-                       data-estoque-qtd="${it.id}" aria-label="Quantidade de ${escapeHtml(it.nome)}"
-                       value="${tem ? escapeHtml(estoque[it.id]) : ''}"
-                       ${tem ? '' : ' disabled'}>
-                <small>${escapeHtml(unidade)}</small>
-              </span>` : '<span class="estoque-qtd"><small>tenho / não tenho</small></span>'}
+            ${medido(it)
+              ? controleQtd(it, tem, estoque[it.id])
+              : '<span class="estoque-qtd"><small>tenho / não tenho</small></span>'}
           </div>`;
         }).join('')}
       </fieldset>`).join('');
+    renderResultado(estoque);
+  }
+
+  function renderResultado(estoque) {
+    renderCompras(estoque);
     renderPossiveis(estoque);
+  }
+
+  function renderCompras(estoque) {
+    const secoes = listaDeCompras(estoque);
+    const total = secoes.reduce((n, sec) => n + sec.itens.length, 0);
+
+    $('#comprasFaltaQtd').textContent = total ? `${total} ${total === 1 ? 'item' : 'itens'}` : '';
+    $('#comprasFalta').innerHTML = secoes.map((sec) => `
+      <li class="falta-secao"><span class="recipe-label">${escapeHtml(sec.secao)}</span></li>
+      ${sec.itens.map((it) => `
+        <li><span>${escapeHtml(it.nome)}${it.detalhe ? `<small>${escapeHtml(it.detalhe)}</small>` : ''}</span>
+          <strong>${escapeHtml(it.qtd)}</strong></li>`).join('')}`).join('');
+    $('#comprasTudoOk').hidden = total > 0;
+    $('#comprasCopiar').hidden = total === 0;
+    $('#estoqueAtalhoQtd').textContent = total
+      ? `${total} ${total === 1 ? 'item' : 'itens'} pra comprar`
+      : 'Nada pra comprar';
   }
 
   function renderPossiveis(estoque) {
@@ -893,8 +856,6 @@
     const nomeCopo = (d) => `${GLASS_ICONS[d.copo]}${escapeHtml(GLASSES[d.copo].curto)}`;
 
     $('#estoqueContagem').textContent = `${pode.length} de ${DRINKS.length} drinks`;
-    $('#estoqueAtalhoQtd').textContent =
-      `${pode.length} ${pode.length === 1 ? 'drink' : 'drinks'} pra fazer`;
     $('#estoquePode').innerHTML = pode.map((r) => `
       <li class="pode-item" style="--card-accent:${r.drink.cor[1]}">
         <span class="pode-info">
@@ -910,34 +871,68 @@
       <li><span>${escapeHtml(r.drink.nome)}</span><strong>falta ${escapeHtml(r.faltam[0])}</strong></li>`).join('');
   }
 
+  function textoCompras() {
+    const linhas = listaDeCompras(Estoque.read()).map((sec) =>
+      `*${sec.secao}*\n` + sec.itens.map((it) => `- ${it.nome}: ${it.qtd}`).join('\n'));
+    return `Lista de compras · Bar do Tibs\n(para ${DOSES_POR_DRINK} de cada drink)\n\n${linhas.join('\n\n')}`;
+  }
+
+  async function copiarCompras() {
+    const texto = textoCompras();
+    try {
+      await navigator.clipboard.writeText(texto);
+      showToast('Lista copiada! É só colar no WhatsApp ou nas notas.');
+    } catch (err) {
+      // Sem permissão de área de transferência (ex.: http): usa o compartilhar do sistema
+      if (navigator.share) {
+        navigator.share({ text: texto }).catch(() => {});
+      } else {
+        showToast('Não consegui copiar automaticamente neste navegador.');
+      }
+    }
+  }
+
+  // Lê inteiro + fração do item e grava no estoque
+  function lerQtd(id) {
+    const int = $(`[data-estoque-int="${id}"]`);
+    const frac = $(`[data-estoque-frac="${id}"]`);
+    const inteiro = parseInt(int ? int.value : '', 10);
+    const fracao = frac ? FRACOES[Number(frac.value)] : null;
+    const qtd = (Number.isFinite(inteiro) && inteiro > 0 ? inteiro : 0) + (fracao ? fracao[0] : 0);
+    const estoque = Estoque.read();
+    estoque[id] = qtd;
+    Estoque.write(estoque);
+    renderResultado(estoque);
+  }
+
   function bindEstoque() {
     const box = $('#estoqueSecoes');
     box.addEventListener('change', (ev) => {
+      const frac = ev.target.closest('[data-estoque-frac]');
+      if (frac) { lerQtd(frac.dataset.estoqueFrac); return; }
       const check = ev.target.closest('[data-estoque]');
       if (!check) return;
       const id = check.dataset.estoque;
       const item = itensDoCatalogo().find((i) => i.id === id);
       const estoque = Estoque.read();
-      const input = $(`[data-estoque-qtd="${id}"]`);
+      const int = $(`[data-estoque-int="${id}"]`);
+      const fracSel = $(`[data-estoque-frac="${id}"]`);
       if (check.checked) {
         estoque[id] = medido(item) ? qtdPadrao(item) : true;
-        if (input) { input.disabled = false; input.value = estoque[id]; input.select(); }
+        if (int) { int.disabled = false; int.value = estoque[id]; int.select(); }
+        if (fracSel) { fracSel.disabled = false; fracSel.value = '0'; }
       } else {
         delete estoque[id];
-        if (input) { input.disabled = true; input.value = ''; }
+        if (int) { int.disabled = true; int.value = ''; }
+        if (fracSel) { fracSel.disabled = true; fracSel.value = '0'; }
       }
       check.closest('.estoque-item').classList.toggle('is-tem', check.checked);
       Estoque.write(estoque);
-      renderPossiveis(estoque);
+      renderResultado(estoque);
     });
     box.addEventListener('input', (ev) => {
-      const input = ev.target.closest('[data-estoque-qtd]');
-      if (!input) return;
-      const estoque = Estoque.read();
-      const qtd = parseFloat(String(input.value).replace(',', '.'));
-      estoque[input.dataset.estoqueQtd] = Number.isFinite(qtd) && qtd > 0 ? qtd : 0;
-      Estoque.write(estoque);
-      renderPossiveis(estoque);
+      const int = ev.target.closest('[data-estoque-int]');
+      if (int) lerQtd(int.dataset.estoqueInt);
     });
     $('#estoqueAtalho').addEventListener('click', () => {
       $('#estoqueResultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -945,6 +940,141 @@
     $('#estoqueLimpar').addEventListener('click', () => {
       Estoque.write({});
       renderEstoque();
+    });
+    $('#comprasCopiar').addEventListener('click', copiarCompras);
+  }
+
+  /* ---------------------------------------------------------
+     Preparativos: o que deixar pronto antes de abrir o bar,
+     para DOSES_POR_DRINK de cada drink. Marcado = já está pronto.
+     --------------------------------------------------------- */
+  const Preparo = {
+    read() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_PREPARO) || '[]');
+        return new Set(Array.isArray(data) ? data : []);
+      } catch (err) {
+        return new Set();
+      }
+    },
+    write(set) {
+      try { localStorage.setItem(STORAGE_KEY_PREPARO, JSON.stringify([...set])); } catch (err) { /* ignorado */ }
+    }
+  };
+
+  // ml de todas as linhas "NN ml de ..." de uma receita
+  const mlDaReceita = (drink) => drink.ingredientes.reduce((sum, l) => {
+    const m = l.match(/^(\d+)\s*ml\b/i);
+    return sum + (m ? Number(m[1]) : 0);
+  }, 0);
+
+  // Quais drinks usam o preparativo
+  function drinksDoPreparo(item) {
+    if (item.usos) return DRINKS.filter((d) => item.usos[d.id]);
+    if (item.lote) return DRINKS.filter((d) => d.id === item.lote);
+    if (item.busca) return DRINKS.filter((d) => necessidadePorDose(item, d));
+    if (item.drinks === TODOS_OS_DRINKS) return DRINKS.slice();
+    if (Array.isArray(item.drinks)) return DRINKS.filter((d) => item.drinks.includes(d.id));
+    return [];
+  }
+
+  // { qtd, detalhe } para DOSES_POR_DRINK de cada drink
+  function qtdDoPreparo(item) {
+    if (item.fixo) return { qtd: item.fixo, detalhe: '' };
+    if (item.usos) {
+      const n = Object.values(item.usos).reduce((a, b) => a + b, 0) * DOSES_POR_DRINK;
+      return { qtd: `${fmtNum(n)} ${item.un[n === 1 ? 0 : 1]}`, detalhe: '' };
+    }
+    if (item.lote) {
+      const drink = DRINKS.find((d) => d.id === item.lote);
+      return { qtd: `${fmtNum(mlDaReceita(drink) * DOSES_POR_DRINK)} ml`, detalhe: `${DOSES_POR_DRINK} doses` };
+    }
+    if (item.busca) {
+      const ml = DRINKS.reduce((sum, d) => {
+        const nec = necessidadePorDose(item, d);
+        return sum + (nec ? nec.ml : 0);
+      }, 0) * DOSES_POR_DRINK;
+      const n = item.rende ? Math.ceil(ml / item.rende) : 0;
+      return { qtd: `${fmtNum(ml)} ml`, detalhe: n ? `≈ ${n} ${item.emb[n === 1 ? 0 : 1]}` : '' };
+    }
+    const usam = drinksDoPreparo(item).length;
+    return { qtd: '', detalhe: usam ? `${usam} ${usam === 1 ? 'drink' : 'drinks'}` : '' };
+  }
+
+  function renderPreparo() {
+    const feito = Preparo.read();
+    $('#preparoSub').textContent = `O que deixar pronto para fazer ${DOSES_POR_DRINK} de cada drink
+      sem começar do zero a cada pedido. Marque conforme for aprontando.`;
+
+    $('#preparoEtapas').innerHTML = PREPARATIVOS.map((etapa) => `
+      <fieldset class="compras-secao">
+        <legend class="recipe-label">${escapeHtml(etapa.etapa)}</legend>
+        ${etapa.itens.map((it) => {
+          const { qtd, detalhe } = qtdDoPreparo(it);
+          const ok = feito.has(it.id);
+          return `
+          <label class="compra-item preparo-item${ok ? ' is-feito' : ''}">
+            <input type="checkbox" class="form-check-input" data-preparo="${it.id}"${ok ? ' checked' : ''}>
+            <span class="compra-info">
+              <span class="compra-nome">${escapeHtml(it.nome)}${it.opcional ? ' <span class="preparo-opcional">opcional</span>' : ''}</span>
+              <span class="compra-drinks">${escapeHtml(it.como)}</span>
+            </span>
+            ${qtd || detalhe ? `<span class="preparo-qtd">${escapeHtml(qtd)}
+              ${detalhe ? `<small>${escapeHtml(detalhe)}</small>` : ''}</span>` : ''}
+          </label>`;
+        }).join('')}
+      </fieldset>`).join('');
+
+    renderProgressoPreparo(feito);
+    renderNaHora();
+  }
+
+  function renderProgressoPreparo(feito) {
+    const total = PREPARATIVOS.reduce((n, e) => n + e.itens.length, 0);
+    const prontos = PREPARATIVOS.reduce((n, e) => n + e.itens.filter((it) => feito.has(it.id)).length, 0);
+    $('#preparoProgresso').textContent = `${prontos} de ${total} prontos`;
+  }
+
+  // Para cada drink, o que já está pronto e os utensílios que ele pede
+  function renderNaHora() {
+    const porDrink = {};
+    DRINKS.forEach((d) => { porDrink[d.id] = { prontos: [], utensilios: [] }; });
+    PREPARATIVOS.forEach((etapa) => etapa.itens.forEach((it) => {
+      if (!it.curto || it.drinks === TODOS_OS_DRINKS) return;
+      drinksDoPreparo(it).forEach((d) => {
+        const lista = porDrink[d.id][etapa.utensilios ? 'utensilios' : 'prontos'];
+        if (!lista.includes(it.curto)) lista.push(it.curto);
+      });
+    }));
+
+    $('#preparoNaHora').innerHTML = DRINKS.map((d) => {
+      const { prontos, utensilios } = porDrink[d.id];
+      return `
+      <li class="naHora-item" style="--card-accent:${d.cor[1]}">
+        <p class="naHora-nome">${escapeHtml(d.nome)}
+          <span class="pode-copo">${GLASS_ICONS[d.copo]}${escapeHtml(GLASSES[d.copo].curto)}</span></p>
+        <div class="naHora-chips">
+          ${prontos.map((c) => `<span class="tag">${escapeHtml(c)}</span>`).join('')}
+          ${utensilios.map((c) => `<span class="tag tag-utensilio">${escapeHtml(c)}</span>`).join('')}
+        </div>
+        <p class="naHora-deco">Decoração: ${escapeHtml(d.guarnicao)}</p>
+      </li>`;
+    }).join('');
+  }
+
+  function bindPreparo() {
+    $('#preparoEtapas').addEventListener('change', (ev) => {
+      const check = ev.target.closest('[data-preparo]');
+      if (!check) return;
+      const feito = Preparo.read();
+      if (check.checked) feito.add(check.dataset.preparo); else feito.delete(check.dataset.preparo);
+      Preparo.write(feito);
+      check.closest('.preparo-item').classList.toggle('is-feito', check.checked);
+      renderProgressoPreparo(feito);
+    });
+    $('#preparoLimpar').addEventListener('click', () => {
+      Preparo.write(new Set());
+      renderPreparo();
     });
   }
 
@@ -1078,14 +1208,8 @@
     });
     $('#resetBtn').addEventListener('click', resetData);
 
-    // Lista de compras
-    $('#comprasSecoes').addEventListener('change', (ev) => {
-      const input = ev.target.closest('[data-compra]');
-      if (input) toggleCompra(input.dataset.compra, input.checked);
-    });
-    $('#comprasCopiar').addEventListener('click', copiarFalta);
-    $('#comprasLimpar').addEventListener('click', limparCompras);
     bindEstoque();
+    bindPreparo();
 
     // Mantém o placar sincronizado entre abas abertas no mesmo dispositivo
     window.addEventListener('storage', (ev) => {
@@ -1096,8 +1220,8 @@
       if (state.view === 'copos') renderGlasses();
     });
     window.addEventListener('storage', (ev) => {
-      if (ev.key === STORAGE_KEY_COMPRAS && state.view === 'compras') renderCompras();
       if (ev.key === STORAGE_KEY_ESTOQUE && state.view === 'estoque') renderEstoque();
+      if (ev.key === STORAGE_KEY_PREPARO && state.view === 'preparo') renderPreparo();
     });
   }
 
