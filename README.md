@@ -44,26 +44,62 @@ python3 -m http.server 8000
 ```
 index.html            três telas (cardápio, ranking, copos) em um único documento
 assets/css/style.css  tema escuro com acabamento dourado, Bootstrap 5 customizado
-assets/js/drinks.js   base de dados: copos, ícones SVG e receitas
+assets/js/config.js   URL e chave anon do Supabase (em branco = só localStorage)
+assets/js/remoto.js   pedidos/avaliações no Supabase via API REST, com fila offline
+assets/js/drinks.js   base de dados: copos, receitas, lista de compras e preparativos
 assets/js/art.js      gerador das ilustrações SVG (formato do copo + cor + gelo + guarnições)
-assets/js/app.js      flip dos cards, modal, persistência, gráficos e filtros
+assets/js/app.js      flip dos cards, modais, avaliações, gráficos, Meu bar e preparativos
+supabase/schema.sql   tabelas, permissões e views do Supabase
 ```
 
-## Sobre a persistência
+## Pedidos e avaliações compartilhados (Supabase)
 
-Os pedidos são gravados no `localStorage`, que é **por navegador**. Ou seja:
-se cada convidado abrir o site no próprio celular, cada um terá o seu próprio placar.
+Sem configuração, cada navegador guarda os próprios pedidos no `localStorage` e o menu
+**Mais pedidos** fica escondido. Ligando o Supabase, todos os aparelhos gravam no mesmo
+banco, sem login:
 
-Duas formas de consolidar o ranking da festa:
+- cada **Quero esse** vira uma linha em `pedidos`, e o ranking mostra a **contagem absoluta**
+  de todos os pedidos, de todos os aparelhos, desde o primeiro;
+- quem pediu um drink recebe no cardápio, 3 minutos depois, o convite
+  *“Já provou o X?”* para dar de 1 a 5 estrelas e, se quiser, um comentário anônimo.
+  Também dá para avaliar pelo verso do card (botão ★) ou pela receita no celular;
+- os cards mostram a nota média, e o ranking ganha o gráfico **Mais bem avaliados** e os
+  últimos comentários;
+- se o Wi-Fi cair, o pedido fica numa fila no aparelho e é enviado quando a conexão voltar.
 
-1. **Totem de pedidos** (recomendado): deixe um tablet ou celular fixo na mesa do bar e
-   todo mundo pede por ali. O placar fica completo e correto.
-2. **Exportar/Importar**: na tela de ranking, cada convidado clica em *Exportar dados* e
-   você importa os arquivos no dispositivo principal — a importação **soma** ao placar
-   existente em vez de sobrescrever.
+### Configurar
 
-Para um placar compartilhado em tempo real seria necessário um backend
-(Firebase, Supabase ou similar), o que foge do escopo de um site estático.
+1. Crie um projeto em [supabase.com](https://supabase.com) (o plano grátis sobra).
+2. No **SQL Editor**, cole e rode o conteúdo de [`supabase/schema.sql`](supabase/schema.sql).
+3. Em **Project Settings → API**, copie a *Project URL* e a chave **anon** (ou *publishable*)
+   para [`assets/js/config.js`](assets/js/config.js):
+
+   ```js
+   window.BAR_CONFIG = {
+     supabaseUrl: 'https://xxxx.supabase.co',
+     supabaseAnonKey: 'eyJ...'
+   };
+   ```
+
+4. Publique. O menu **Mais pedidos** aparece sozinho.
+
+A chave anon é pública por natureza (vai no código do site); nunca use a `service_role`.
+O que protege os dados são as regras do `schema.sql`:
+
+- o público só consegue **inserir** pedidos e avaliações — não lê, altera nem apaga linhas;
+- a leitura é só pelas views `ranking_drinks` (totais e média) e `comentarios_recentes`,
+  que não expõem o id anônimo do aparelho;
+- nota fora de 1–5 e comentário acima de 500 caracteres são recusados pelo banco;
+- cada aparelho tem uma avaliação por drink: se avaliar de novo, vale a mais recente.
+
+Não há como impedir, num site sem login, que alguém mal-intencionado envie pedidos em
+massa com a chave pública. Para uma festa isso basta; se um dia precisar, dá para apagar
+linhas pelo painel do Supabase (**Table Editor**), que usa permissão de administrador.
+
+### Sem Supabase
+
+As ferramentas *Exportar / Importar / Zerar* da tela de ranking continuam valendo para o
+placar local de cada navegador (a importação **soma** ao placar existente).
 
 ## Adicionar um drink novo
 

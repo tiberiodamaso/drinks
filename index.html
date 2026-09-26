@@ -35,8 +35,8 @@
         <li class="nav-item">
           <a class="nav-link active" href="#" data-view-link="cardapio">Cardápio</a>
         </li>
-        <!-- Oculto até o placar ser consolidado entre aparelhos (Firebase) -->
-        <li class="nav-item" hidden>
+        <!-- Aparece quando o Supabase está configurado (assets/js/config.js) -->
+        <li class="nav-item" id="navRanking" hidden>
           <a class="nav-link" href="#" data-view-link="ranking">
             Mais pedidos
             <span class="badge-count" id="navTotalBadge" hidden>0</span>
@@ -82,6 +82,15 @@
       <div class="filter-chips" id="glassFilters" role="group" aria-label="Filtrar por copo"></div>
     </div>
 
+    <!-- Convite para avaliar um drink pedido neste aparelho -->
+    <div class="convite-avaliar" id="conviteAvaliar" hidden>
+      <p>Já provou o <strong id="conviteNome">—</strong>? Conta pra gente o que achou.</p>
+      <div class="convite-acoes">
+        <button type="button" class="btn btn-ghost btn-sm" id="conviteNao">Agora não</button>
+        <button type="button" class="btn btn-gold btn-sm" id="conviteSim">Avaliar</button>
+      </div>
+    </div>
+
     <p class="results-info" id="resultsInfo"></p>
 
     <!-- Grid de cards -->
@@ -100,9 +109,9 @@
 <main id="view-ranking" class="view" hidden>
   <header class="hero hero-compact">
     <div class="container">
-      <p class="hero-kicker">Placar da noite</p>
+      <p class="hero-kicker">Placar geral</p>
       <h1 class="hero-title">Drinks mais pedidos</h1>
-      <p class="hero-sub">O que a galera está bebendo, em tempo real.</p>
+      <p class="hero-sub" id="rankingSub">O que a galera está bebendo.</p>
     </div>
   </header>
 
@@ -125,13 +134,13 @@
       <div class="col-6 col-lg-3">
         <div class="stat-card">
           <span class="stat-value stat-value-sm" id="statCampeao">—</span>
-          <span class="stat-label">Campeão da noite</span>
+          <span class="stat-label">Campeão de pedidos</span>
         </div>
       </div>
       <div class="col-6 col-lg-3">
         <div class="stat-card">
-          <span class="stat-value stat-value-sm" id="statCopo">—</span>
-          <span class="stat-label">Copo mais usado</span>
+          <span class="stat-value stat-value-sm" id="statNota">—</span>
+          <span class="stat-label">Mais bem avaliado</span>
         </div>
       </div>
     </div>
@@ -181,10 +190,37 @@
             </div>
           </div>
         </div>
+
+        <!-- Avaliações (Supabase) -->
+        <div class="col-12" id="avaliacoesPanel" hidden>
+          <div class="row g-4">
+            <div class="col-lg-7">
+              <div class="panel">
+                <div class="panel-head">
+                  <h2 class="panel-title">Mais bem avaliados</h2>
+                  <span class="panel-hint">nota média de 1 a 5</span>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="ratingChart" aria-label="Gráfico da nota média de cada drink" role="img"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-5" id="comentariosBox" hidden>
+              <div class="panel h-100">
+                <div class="panel-head">
+                  <h2 class="panel-title">O que disseram</h2>
+                  <span class="panel-hint">últimos comentários</span>
+                </div>
+                <ul class="comentario-list" id="comentariosList"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Ferramentas -->
+    <!-- Ferramentas (só para o placar local, sem Supabase) -->
+    <div id="rankingTools">
     <div class="tools-bar">
       <button class="btn btn-outline-soft btn-sm" id="exportBtn">Exportar dados</button>
       <button class="btn btn-outline-soft btn-sm" id="importBtn">Importar dados</button>
@@ -195,6 +231,7 @@
       Os pedidos ficam salvos no navegador de cada convidado. Para consolidar o placar da festa,
       peça que exportem o arquivo ou deixe um único celular/tablet como “totem de pedidos”.
     </p>
+    </div>
   </section>
 </main>
 
@@ -327,6 +364,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-ghost" id="sheetRateBtn" hidden>Avaliar</button>
         <button type="button" class="btn btn-gold" id="sheetOrderBtn">Quero esse</button>
       </div>
     </div>
@@ -352,6 +390,33 @@
   </div>
 </div>
 
+<!-- ============ MODAL DE AVALIAÇÃO ============ -->
+<div class="modal fade" id="rateModal" tabindex="-1" aria-labelledby="rateModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center">
+        <p class="modal-kicker">O que você achou?</p>
+        <h2 class="modal-title" id="rateModalLabel">—</h2>
+        <div class="rate-stars" id="rateStars" role="radiogroup" aria-label="Nota de 1 a 5">
+          <button type="button" role="radio" aria-checked="false" data-nota-valor="1" aria-label="1 estrela">★</button>
+          <button type="button" role="radio" aria-checked="false" data-nota-valor="2" aria-label="2 estrelas">★</button>
+          <button type="button" role="radio" aria-checked="false" data-nota-valor="3" aria-label="3 estrelas">★</button>
+          <button type="button" role="radio" aria-checked="false" data-nota-valor="4" aria-label="4 estrelas">★</button>
+          <button type="button" role="radio" aria-checked="false" data-nota-valor="5" aria-label="5 estrelas">★</button>
+        </div>
+        <p class="rate-nota-texto" id="rateNotaTexto" aria-live="polite">Toque nas estrelas</p>
+        <label class="visually-hidden" for="rateComentario">Comentário (opcional)</label>
+        <textarea class="form-control rate-comentario" id="rateComentario" rows="3" maxlength="500"
+                  placeholder="Quer deixar um comentário? (opcional, anônimo)"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-gold" id="rateEnviar" disabled>Enviar avaliação</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ TOAST ============ -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
   <div id="orderToast" class="toast align-items-center border-0" role="status" aria-live="polite" aria-atomic="true">
@@ -372,6 +437,8 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
         integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/remoto.js"></script>
 <script src="assets/js/drinks.js"></script>
 <script src="assets/js/art.js"></script>
 <script src="assets/js/app.js"></script>

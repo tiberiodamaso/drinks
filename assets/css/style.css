@@ -947,6 +947,53 @@ ol.recipe-list li::before {
   .preparo-qtd small { display: inline; margin-left: .35rem; }
 }
 
+/* ---------------- Avaliações ---------------- */
+.card-nota { font-size: .76rem; font-weight: 600; color: var(--brand); white-space: nowrap; }
+.card-nota:empty { display: none; }
+.card-nota small { font-weight: 500; color: var(--ink-dim); }
+.back-foot .btn-back[data-action="avaliar"] { color: var(--brand); }
+
+.convite-avaliar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem 1rem;
+  margin: 0 0 1rem;
+  padding: .8rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--brand-bright);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.convite-avaliar p { margin: 0; font-size: .92rem; color: var(--ink); }
+.convite-acoes { display: flex; gap: .5rem; }
+
+.rate-stars { display: flex; justify-content: center; gap: .25rem; margin: .8rem 0 .2rem; }
+.rate-stars button {
+  border: 0;
+  background: none;
+  padding: .1rem .2rem;
+  font-size: 2.3rem;
+  line-height: 1;
+  color: var(--line-2);
+  cursor: pointer;
+  transition: transform .12s ease, color .12s ease;
+}
+.rate-stars button.is-on { color: var(--brand-bright); }
+.rate-stars button:hover { transform: scale(1.12); }
+.rate-stars button:focus-visible { outline: 2px solid var(--brand-bright); outline-offset: 2px; border-radius: 6px; }
+.rate-nota-texto { font-size: .85rem; color: var(--ink-dim); min-height: 1.3em; margin: 0 0 .9rem; }
+.rate-comentario { font-size: .9rem; border-color: var(--line-2); resize: vertical; }
+.rate-comentario:focus { border-color: var(--brand-bright); box-shadow: 0 0 0 .2rem var(--brand-tint); }
+
+.comentario-list { list-style: none; padding: 0; margin: 0; max-height: 440px; overflow-y: auto; }
+.comentario { padding: .65rem 0 .65rem .8rem; border-bottom: 1px solid var(--line); border-left: 3px solid var(--card-accent); }
+.comentario:last-child { border-bottom: none; }
+.comentario-texto { margin: 0 0 .2rem; font-size: .9rem; color: var(--ink); }
+.comentario-meta { font-size: .74rem; color: var(--ink-dim); }
+
 /* ---------------- View transitions ---------------- */
 .view { animation: fadeUp .36s ease both; }
 @keyframes fadeUp {

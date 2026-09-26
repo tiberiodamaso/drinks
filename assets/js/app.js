@@ -8,10 +8,14 @@
   const STORAGE_KEY_LEGADO = 'bar-da-casa:pedidos:v1';
   const STORAGE_KEY_ESTOQUE = 'bar-do-tibs:estoque:v1';
   const STORAGE_KEY_PREPARO = 'bar-do-tibs:preparativos:v1';
+  const STORAGE_KEY_PROVADOS = 'bar-do-tibs:provados:v1';
 
-  // A contagem segue sendo gravada, mas fica fora da tela enquanto cada
-  // aparelho tem o seu placar. Religar junto com o menu "Mais pedidos".
-  const MOSTRAR_CONTAGEM = false;
+  // Contagem e avaliações só aparecem com o Supabase configurado
+  // (config.js): sem ele cada aparelho teria o seu próprio placar.
+  const MOSTRAR_CONTAGEM = Remoto.ativo;
+
+  // Quanto tempo depois do pedido o site pergunta o que a pessoa achou
+  const AVALIAR_DEPOIS_MS = 3 * 60 * 1000;
 
   /* ---------------------------------------------------------
      Persistência (localStorage)
@@ -68,6 +72,44 @@
   };
 
   /* ---------------------------------------------------------
+     Contagem exibida: com Supabase, a absoluta de todos os
+     aparelhos (desde sempre); sem ele, a deste navegador.
+     --------------------------------------------------------- */
+  let remoto = {}; // { "<drink-id>": { pedidos, avaliacoes, media } }
+
+  function lerContagem() {
+    if (!Remoto.ativo) return Store.read();
+    const counts = {};
+    DRINKS.forEach((d) => {
+      if (remoto[d.id] && remoto[d.id].pedidos > 0) counts[d.id] = remoto[d.id].pedidos;
+    });
+    return counts;
+  }
+
+  // { media, avaliacoes } ou null se o drink ainda não foi avaliado
+  const notaDe = (id) => (remoto[id] && remoto[id].avaliacoes > 0 ? remoto[id] : null);
+  const fmtNota = (n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+  async function atualizarRemoto() {
+    if (!Remoto.ativo) return;
+    try {
+      remoto = await Remoto.ranking();
+    } catch (err) {
+      console.warn('Não foi possível ler o ranking do Supabase:', err);
+      return;
+    }
+    // Atualiza os cards no lugar, sem desvirar o que alguém está lendo
+    const counts = lerContagem();
+    DRINKS.forEach((d) => {
+      updateCardBadge(d.id, counts[d.id] || 0);
+      updateCardNota(d.id);
+    });
+    updateNavBadge();
+    if (state.view === 'ranking') renderRanking();
+    if (state.view === 'copos') renderGlasses();
+  }
+
+  /* ---------------------------------------------------------
      Estado da interface
      --------------------------------------------------------- */
   const state = {
@@ -77,7 +119,7 @@
     pendingDrink: null
   };
 
-  let charts = { ranking: null, glass: null };
+  let charts = { ranking: null, glass: null, rating: null };
 
   /* ---------------------------------------------------------
      Helpers
@@ -137,6 +179,8 @@
     <path d="M21 3v5h-5"/></svg>`;
   const ICON_RECIPE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
     stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>`;
+  const ICON_STAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>`;
   const ICON_BACK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
     stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>`;
 
@@ -153,7 +197,7 @@
       link.classList.toggle('active', link.dataset.viewLink === name);
     });
 
-    if (name === 'ranking') renderRanking();
+    if (name === 'ranking') { renderRanking(); atualizarRemoto(); }
     if (name === 'copos') renderGlasses();
     if (name === 'estoque') renderEstoque();
     if (name === 'preparo') renderPreparo();
@@ -206,6 +250,19 @@
       <div class="recipe-tip"><strong>Dica:</strong> ${escapeHtml(drink.dica)}</div>`;
   }
 
+  function notaHtml(drinkId) {
+    const n = notaDe(drinkId);
+    if (!n) return '';
+    return `<span aria-hidden="true">★</span> ${fmtNota(n.media)}
+      <small>(${n.avaliacoes})</small><span class="visually-hidden"> de 5, ${n.avaliacoes}
+      ${n.avaliacoes === 1 ? 'avaliação' : 'avaliações'}</span>`;
+  }
+
+  function updateCardNota(drinkId) {
+    const alvo = $(`.flip-card[data-drink="${drinkId}"] [data-nota]`);
+    if (alvo) alvo.innerHTML = notaHtml(drinkId);
+  }
+
   function buildCard(drink, counts) {
     const glass = GLASSES[drink.copo];
     const qty = counts[drink.id] || 0;
@@ -238,6 +295,7 @@
             </div>
             <div class="card-front-foot">
               ${strengthDots(drink.forca)}
+              <span class="card-nota" data-nota>${notaHtml(drink.id)}</span>
               <span class="flip-hint">${gaveta ? ICON_RECIPE : ICON_FLIP} Ver receita</span>
             </div>
           </div>
@@ -251,6 +309,8 @@
             <div class="back-foot">
               <button type="button" class="btn btn-back" data-action="voltar"
                       aria-label="Voltar para a frente do card">${ICON_BACK}</button>
+              ${Remoto.ativo ? `<button type="button" class="btn btn-back" data-action="avaliar"
+                      aria-label="Avaliar ${escapeHtml(drink.nome)}">${ICON_STAR}</button>` : ''}
               <button type="button" class="btn btn-gold" data-action="pedir">Quero esse</button>
             </div>
           </div>`}
@@ -263,7 +323,7 @@
   function renderGrid() {
     const grid = $('#drinkGrid');
     const list = getFilteredDrinks();
-    const counts = Store.read();
+    const counts = lerContagem();
 
     grid.innerHTML = '';
     const frag = document.createDocumentFragment();
@@ -312,6 +372,7 @@
         ev.stopPropagation();
         if (actionBtn.dataset.action === 'voltar') flipCard(card, false);
         if (actionBtn.dataset.action === 'pedir') openConfirm(card.dataset.drink);
+        if (actionBtn.dataset.action === 'avaliar') openRating(card.dataset.drink);
         return;
       }
 
@@ -364,6 +425,12 @@
     recipeSheet.show();
   }
 
+  function rateFromSheet() {
+    const drinkId = $('#recipeSheet').dataset.drink;
+    $('#recipeSheet').addEventListener('hidden.bs.modal', () => openRating(drinkId), { once: true });
+    recipeSheet.hide();
+  }
+
   function orderFromSheet() {
     const drinkId = $('#recipeSheet').dataset.drink;
     // Bootstrap não abre um modal enquanto outro ainda está fechando
@@ -402,7 +469,14 @@
     const drink = state.pendingDrink;
     if (!drink) return;
 
-    const novaQtd = Store.add(drink.id);
+    Store.add(drink.id);
+    if (Remoto.ativo) {
+      Remoto.pedir(drink.id);
+      const r = remoto[drink.id] || (remoto[drink.id] = { pedidos: 0, avaliacoes: 0, media: null });
+      r.pedidos += 1; // otimista: o próximo ranking lido do Supabase corrige
+      Provados.add(drink.id);
+    }
+    const novaQtd = lerContagem()[drink.id] || 0;
     confirmModal.hide();
 
     updateCardBadge(drink.id, novaQtd);
@@ -423,6 +497,7 @@
     const card = $(`.flip-card[data-drink="${drinkId}"]`);
     if (!card) return;
     let badge = card.querySelector('[data-qty-badge]');
+    if (!qty) { if (badge) badge.remove(); return; }
     if (!badge) {
       badge = document.createElement('span');
       badge.className = 'order-count-badge';
@@ -434,7 +509,7 @@
 
   function updateNavBadge() {
     if (!MOSTRAR_CONTAGEM) return;
-    const total = Object.values(Store.read()).reduce((a, b) => a + b, 0);
+    const total = Object.values(lerContagem()).reduce((a, b) => a + b, 0);
     const badge = $('#navTotalBadge');
     badge.textContent = total;
     badge.hidden = total === 0;
@@ -450,10 +525,116 @@
   }
 
   /* ---------------------------------------------------------
+     Avaliações (anônimas, uma por aparelho por drink — a última vale)
+     Provados: { "<drink-id>": timestamp do pedido } dos drinks pedidos
+     neste aparelho e ainda não avaliados; alimenta o convite no cardápio.
+     --------------------------------------------------------- */
+  const Provados = {
+    read() {
+      try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY_PROVADOS) || '{}');
+        return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+      } catch (err) {
+        return {};
+      }
+    },
+    write(data) {
+      try { localStorage.setItem(STORAGE_KEY_PROVADOS, JSON.stringify(data)); } catch (err) { /* ignorado */ }
+    },
+    add(id) {
+      const data = Provados.read();
+      if (!data[id]) data[id] = Date.now();
+      Provados.write(data);
+    },
+    remove(id) {
+      const data = Provados.read();
+      delete data[id];
+      Provados.write(data);
+    }
+  };
+
+  let rateModal = null;
+  const ROTULO_NOTA = ['', 'Não curti', 'Mais ou menos', 'Bom', 'Muito bom', 'Perfeito!'];
+
+  function openRating(drinkId) {
+    const drink = DRINKS.find((d) => d.id === drinkId);
+    if (!drink || !Remoto.ativo) return;
+    const modal = $('#rateModal');
+    modal.dataset.drink = drink.id;
+    $('#rateModalLabel').textContent = drink.nome;
+    $('#rateComentario').value = '';
+    setNota(0);
+    rateModal.show();
+  }
+
+  function setNota(n) {
+    $('#rateModal').dataset.nota = n;
+    $$('#rateStars [data-nota-valor]').forEach((btn) => {
+      const v = Number(btn.dataset.notaValor);
+      btn.classList.toggle('is-on', v <= n);
+      btn.setAttribute('aria-checked', String(v === n));
+    });
+    $('#rateNotaTexto').textContent = n ? ROTULO_NOTA[n] : 'Toque nas estrelas';
+    $('#rateEnviar').disabled = !n;
+  }
+
+  async function enviarAvaliacao() {
+    const modal = $('#rateModal');
+    const drink = DRINKS.find((d) => d.id === modal.dataset.drink);
+    const nota = Number(modal.dataset.nota);
+    if (!drink || !nota) return;
+    const btn = $('#rateEnviar');
+    btn.disabled = true;
+    await Remoto.avaliar(drink.id, nota, $('#rateComentario').value);
+    btn.disabled = false;
+    Provados.remove(drink.id);
+    renderConvite();
+    rateModal.hide();
+    showToast(`Valeu! Sua nota para o <strong>${escapeHtml(drink.nome)}</strong> foi registrada.`);
+    atualizarRemoto();
+  }
+
+  // Convite "Já provou o X?" para o pedido mais antigo ainda sem nota
+  function renderConvite() {
+    const box = $('#conviteAvaliar');
+    if (!Remoto.ativo) { box.hidden = true; return; }
+    const provados = Provados.read();
+    const agora = Date.now();
+    const id = Object.keys(provados)
+      .filter((k) => agora - provados[k] >= AVALIAR_DEPOIS_MS && DRINKS.some((d) => d.id === k))
+      .sort((a, b) => provados[a] - provados[b])[0];
+    box.hidden = !id;
+    if (!id) return;
+    box.dataset.drink = id;
+    $('#conviteNome').textContent = DRINKS.find((d) => d.id === id).nome;
+  }
+
+  function bindAvaliacoes() {
+    $('#rateStars').addEventListener('click', (ev) => {
+      const btn = ev.target.closest('[data-nota-valor]');
+      if (btn) setNota(Number(btn.dataset.notaValor));
+    });
+    $('#rateStars').addEventListener('keydown', (ev) => {
+      const atual = Number($('#rateModal').dataset.nota) || 0;
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') { ev.preventDefault(); setNota(Math.min(5, atual + 1)); }
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') { ev.preventDefault(); setNota(Math.max(1, atual - 1)); }
+    });
+    $('#rateEnviar').addEventListener('click', enviarAvaliacao);
+    $('#sheetRateBtn').addEventListener('click', rateFromSheet);
+    $('#conviteSim').addEventListener('click', () => openRating($('#conviteAvaliar').dataset.drink));
+    $('#conviteNao').addEventListener('click', () => {
+      Provados.remove($('#conviteAvaliar').dataset.drink);
+      renderConvite();
+    });
+    renderConvite();
+    setInterval(renderConvite, 30000);
+  }
+
+  /* ---------------------------------------------------------
      Ranking
      --------------------------------------------------------- */
   function getRanking() {
-    const counts = Store.read();
+    const counts = lerContagem();
     return Object.keys(counts)
       .map((id) => {
         const drink = DRINKS.find((d) => d.id === id);
@@ -485,12 +666,50 @@
     ranking.forEach((r) => {
       porCopo[r.drink.copo] = (porCopo[r.drink.copo] || 0) + r.qty;
     });
-    const copoTop = Object.keys(porCopo).sort((a, b) => porCopo[b] - porCopo[a])[0];
-    $('#statCopo').textContent = GLASSES[copoTop].nome;
+
+    const avaliados = drinksAvaliados();
+    $('#statNota').textContent = avaliados.length
+      ? `${avaliados[0].drink.nome} · ★ ${fmtNota(avaliados[0].media)}` : '—';
 
     renderRankList(ranking, total);
     renderRankingChart(ranking);
     renderGlassChart(porCopo);
+    renderAvaliacoes(avaliados);
+  }
+
+  // Drinks com nota, do melhor para o pior (empate: mais avaliações)
+  function drinksAvaliados() {
+    return DRINKS
+      .map((drink) => Object.assign({ drink }, notaDe(drink.id)))
+      .filter((r) => r.avaliacoes > 0)
+      .sort((a, b) => b.media - a.media || b.avaliacoes - a.avaliacoes);
+  }
+
+  function renderAvaliacoes(avaliados) {
+    $('#avaliacoesPanel').hidden = avaliados.length === 0;
+    if (!avaliados.length) {
+      if (charts.rating) { charts.rating.destroy(); charts.rating = null; }
+      return;
+    }
+    renderRatingChart(avaliados);
+    renderComentarios();
+  }
+
+  async function renderComentarios() {
+    let lista = [];
+    try { lista = await Remoto.comentarios(); } catch (err) { /* segue sem comentários */ }
+    const box = $('#comentariosList');
+    const validos = lista.filter((c) => DRINKS.some((d) => d.id === c.drink_id));
+    $('#comentariosBox').hidden = validos.length === 0;
+    box.innerHTML = validos.map((c) => {
+      const drink = DRINKS.find((d) => d.id === c.drink_id);
+      return `
+        <li class="comentario" style="--card-accent:${drink.cor[1]}">
+          <p class="comentario-texto">“${escapeHtml(c.comentario)}”</p>
+          <span class="comentario-meta">${'★'.repeat(c.nota)}${'☆'.repeat(5 - c.nota)}
+            · ${escapeHtml(drink.nome)}</span>
+        </li>`;
+    }).join('');
   }
 
   function renderRankList(ranking, total) {
@@ -501,7 +720,8 @@
           <span class="rank-pos">${i + 1}</span>
           <div class="rank-info">
             <p class="rank-name">${escapeHtml(r.drink.nome)}</p>
-            <span class="rank-glass">${escapeHtml(GLASSES[r.drink.copo].nome)} · ${pct}% dos pedidos</span>
+            <span class="rank-glass">${escapeHtml(GLASSES[r.drink.copo].nome)} · ${pct}% dos pedidos${notaDe(r.drink.id)
+              ? ` · ★ ${fmtNota(notaDe(r.drink.id).media)}` : ''}</span>
           </div>
           <span class="rank-qty">${r.qty}<small>${r.qty === 1 ? 'pedido' : 'pedidos'}</small></span>
         </li>`;
@@ -628,6 +848,71 @@
     });
   }
 
+  function renderRatingChart(avaliados) {
+    chartDefaults();
+    const canvas = $('#ratingChart');
+    if (charts.rating) charts.rating.destroy();
+    canvas.parentElement.style.height = Math.max(200, avaliados.length * 42 + 60) + 'px';
+
+    charts.rating = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: avaliados.map((r) => r.drink.nome),
+        datasets: [{
+          label: 'Nota média',
+          data: avaliados.map((r) => r.media),
+          backgroundColor: avaliados.map((r) => hexToRgba(r.drink.cor[1], .85)),
+          borderColor: avaliados.map((r) => r.drink.cor[1]),
+          borderWidth: 1,
+          borderRadius: 6,
+          borderSkipped: false,
+          barThickness: 22,
+          maxBarThickness: 26
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        layout: { padding: { right: 14 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#ffffff',
+            borderColor: 'rgba(43,36,32,.16)',
+            borderWidth: 1,
+            titleColor: '#2b2420',
+            bodyColor: '#b4621d',
+            padding: 11,
+            displayColors: false,
+            callbacks: {
+              label: (ctx) => {
+                const r = avaliados[ctx.dataIndex];
+                return [`★ ${fmtNota(r.media)} de 5`,
+                  `${r.avaliacoes} ${r.avaliacoes === 1 ? 'avaliação' : 'avaliações'}`];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            min: 0,
+            max: 5,
+            ticks: { stepSize: 1, color: '#8a7d70' },
+            grid: { color: 'rgba(43,36,32,.08)' },
+            border: { display: false }
+          },
+          y: {
+            ticks: { color: '#2b2420', font: { size: 12.5 } },
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  }
+
   function destroyCharts() {
     Object.keys(charts).forEach((k) => {
       if (charts[k]) { charts[k].destroy(); charts[k] = null; }
@@ -638,7 +923,7 @@
      View "Meus copos"
      --------------------------------------------------------- */
   function renderGlasses() {
-    const counts = Store.read();
+    const counts = lerContagem();
     $('#glassGrid').innerHTML = Object.values(GLASSES).map((glass) => {
       const drinks = DRINKS.filter((d) => d.copo === glass.id);
       const pedidos = drinks.reduce((sum, d) => sum + (counts[d.id] || 0), 0);
@@ -1145,6 +1430,7 @@
   function init() {
     confirmModal = new bootstrap.Modal($('#confirmModal'));
     recipeSheet = new bootstrap.Modal($('#recipeSheet'));
+    rateModal = new bootstrap.Modal($('#rateModal'));
     toast = new bootstrap.Toast($('#orderToast'), { delay: 3800 });
 
     renderGlassFilters();
@@ -1210,6 +1496,19 @@
 
     bindEstoque();
     bindPreparo();
+
+    // Supabase: placar compartilhado e avaliações
+    if (Remoto.ativo) {
+      $('#navRanking').hidden = false;
+      $('#sheetRateBtn').hidden = false;
+      $('#rankingTools').hidden = true; // exportar/importar/zerar é só do placar local
+      $('#rankingSub').textContent = 'Contagem de todos os pedidos, de todos os aparelhos, desde o primeiro.';
+      Remoto.sincronizar();
+      atualizarRemoto();
+      // Enquanto o ranking está aberto, acompanha os pedidos da galera
+      setInterval(() => { if (state.view === 'ranking' && !document.hidden) atualizarRemoto(); }, 30000);
+    }
+    bindAvaliacoes();
 
     // Mantém o placar sincronizado entre abas abertas no mesmo dispositivo
     window.addEventListener('storage', (ev) => {
